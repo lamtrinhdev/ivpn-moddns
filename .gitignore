@@ -1,0 +1,13 @@
+compose.dev.yml
+api/vendor
+api/dnsapi
+api/.env
+proxy/dnsproxy
+proxy/vendor
+proxy/.env
+blocklists/vendor
+blocklists/dnsblocklists
+blocklists/.env
+libs/vendor
+tests/docker_logs
+.qodo

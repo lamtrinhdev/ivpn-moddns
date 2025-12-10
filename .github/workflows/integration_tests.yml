@@ -1,0 +1,63 @@
+name: Smoke / integration tests
+
+on:
+  push:
+    branches: ["main", "staging"]
+  pull_request:
+    branches: ["main", "staging"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: cd tests/; pip install dnspython[doh]; make install_test_dependencies
+
+      - name: SSL certs location
+        run: |
+          python_certs_path=`python -m certifi`
+          echo "Python CA store path: ${python_certs_path}"
+          echo "PYTHON_CERTS_PATH=${python_certs_path}" >> $GITHUB_ENV
+          echo "IVPN_CERT_PATH=./certs/mkcert_development_CA_307611231582065277882115426409270736451.crt" >> $GITHUB_ENV
+
+      - name: SSL cert setup
+        run: |
+          echo "The value of PYTHON_CERTS_PATH is $PYTHON_CERTS_PATH"
+          sudo cat ${IVPN_CERT_PATH} >> ${PYTHON_CERTS_PATH}
+
+      - name: Add hosts to /etc/hosts
+        run: |
+          sudo echo "127.0.0.1 ivpndns.com" | sudo tee -a /etc/hosts
+
+      - name: Prepare .env from sample
+        run: |
+          if [ ! -f tests/.env ]; then
+            echo "No custom tests/.env found; copying from .env.sample"
+            cp tests/.env.sample tests/.env
+          else
+            echo "Existing tests/.env present (will not overwrite)"
+          fi
+
+      - name: Load test .env (with optional secret overrides)
+        run: |
+          echo "Loading tests/.env"
+          while IFS='=' read -r key value; do
+            if [[ -z "$key" || "$key" =~ ^# ]]; then continue; fi
+            # Only set if not already provided via environment (e.g., GitHub Secrets)
+            if [[ -z "${!key}" ]]; then
+              echo "Exporting $key from .env"
+              echo "$key=$value" >> $GITHUB_ENV
+            else
+              echo "Preserving pre-set $key"
+            fi
+          done < tests/.env
+          echo "Final exported vars:"; grep -E '^(REDIS_)' $GITHUB_ENV || true
+
+      - name: Run integration tests
+        run: cd tests/; make test_ci

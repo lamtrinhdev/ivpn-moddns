@@ -1,0 +1,24 @@
+services:
+  proxy:
+    image: dnsproxy:latest
+    restart: always
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    networks:
+      - dnsnetwork
+    container_name: dnsproxy
+    depends_on:
+      - redis_replica_dns
+      - recursor_sdns
+      - recursor_unbound
+    ports:
+      - "53000:53/udp" # PLAIN DNS
+      - "53000:53/tcp" # PLAIN DNS
+      - "443:443" # HTTPS
+      - "853:853" # TLS
+      - "54000:54000/udp" # QUIC
+    volumes:
+      - ./certs:/certs
+    env_file:
+      - ./proxy/.env

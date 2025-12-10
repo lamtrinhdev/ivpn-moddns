@@ -1,0 +1,74 @@
+name: Docker build
+
+on:
+  pull_request:
+    branches: ["main", "staging"]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker version
+        run: docker --version
+
+      - name: Build API image
+        run: |
+          IMAGE=dnsapi
+          make build_api_image IMAGE=${IMAGE}
+          echo "DNS_API_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner - DNS API
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.DNS_API_IMAGE }}
+          trivy-config: ./.github/trivy.yaml
+
+      - name: Build Proxy image
+        run: |
+          IMAGE=dnsproxy
+          make build_proxy_image IMAGE=${IMAGE}
+          echo "DNS_PROXY_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner - DNS Proxy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.DNS_PROXY_IMAGE }}
+          trivy-config: ./.github/trivy.yaml
+
+      - name: Build Frontend image
+        run: |
+          IMAGE=dnswebapp
+          make build_frontend_image IMAGE=${IMAGE}
+          echo "DNS_FRONTEND_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner - DNS Frontend
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.DNS_FRONTEND_IMAGE }}
+          trivy-config: ./.github/trivy.yaml
+
+      - name: Build DNS blocklists image
+        run: |
+          IMAGE=dnsblocklists
+          make build_blocklists_image IMAGE=${IMAGE}
+          echo "DNS_BLOCKLISTS_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner - DNS blocklists
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.DNS_BLOCKLISTS_IMAGE }}
+          trivy-config: ./.github/trivy.yaml
+
+      - name: Build DNS check image
+        run: |
+          IMAGE=dnscheck
+          make build_dnscheck_image IMAGE=${IMAGE}
+          echo "DNS_CHECK_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner - DNS check
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.DNS_CHECK_IMAGE }}
+          trivy-config: ./.github/trivy.yaml

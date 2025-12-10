@@ -1,0 +1,187 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+# This workflow will run per-service Go jobs only if that service's directory changed
+# (push / PR) or if explicitly requested via manual dispatch inputs.
+# A preliminary "changes" job detects which service paths were modified using dorny/paths-filter.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Optional reason for manual run'
+        required: false
+        default: 'manual trigger'
+      all:
+        description: 'Run all Go service jobs'
+        type: boolean
+        default: false
+      api:
+        description: 'Run API job'
+        type: boolean
+        default: false
+      libs:
+        description: 'Run Libs job'
+        type: boolean
+        default: false
+      proxy:
+        description: 'Run Proxy job'
+        type: boolean
+        default: false
+      blocklists:
+        description: 'Run Blocklists job'
+        type: boolean
+        default: false
+      dnscheck:
+        description: 'Run DNSCheck job'
+        type: boolean
+        default: false
+  push:
+    branches: ["main", "staging"]
+    # Trigger evaluation when any service or this workflow file changes.
+    paths:
+      - 'api/**'
+      - 'libs/**'
+      - 'proxy/**'
+      - 'blocklists/**'
+      - 'dnscheck/**'
+      - '.github/workflows/go.yml'
+  pull_request:
+    branches: ["main", "staging"]
+    paths:
+      - 'api/**'
+      - 'libs/**'
+      - 'proxy/**'
+      - 'blocklists/**'
+      - 'dnscheck/**'
+      - '.github/workflows/go.yml'
+
+jobs:
+  changes:
+    name: Detect changed service directories
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      libs: ${{ steps.filter.outputs.libs }}
+      proxy: ${{ steps.filter.outputs.proxy }}
+      blocklists: ${{ steps.filter.outputs.blocklists }}
+      dnscheck: ${{ steps.filter.outputs.dnscheck }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Paths filter
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'api/**'
+            libs:
+              - 'libs/**'
+            proxy:
+              - 'proxy/**'
+            blocklists:
+              - 'blocklists/**'
+            dnscheck:
+              - 'dnscheck/**'
+
+  api:
+    runs-on: ubuntu-latest
+    needs: changes
+    # Also run API job if libs changed (libs change triggers full Go suite)
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.all == 'true' || github.event.inputs.api == 'true')) || (github.event_name != 'workflow_dispatch' && (needs.changes.outputs.api == 'true' || needs.changes.outputs.libs == 'true')) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go (API)
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25.4"
+      - name: Build API
+        run: cd api/; go mod vendor; make build
+      - name: Test API
+        run: cd api/; make test
+      - name: golangci-lint - API
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: api
+          args: --config ../.github/golangci.yml
+
+  libs:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.all == 'true' || github.event.inputs.libs == 'true')) || (github.event_name != 'workflow_dispatch' && needs.changes.outputs.libs == 'true') }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go (Libs)
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.2"
+      - name: Test Libs
+        run: cd libs/; go mod vendor; make test
+      - name: golangci-lint - Libs (non-blocking)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: libs
+          args: --config ../.github/golangci.yml --issues-exit-code=0
+
+  proxy:
+    runs-on: ubuntu-latest
+    needs: changes
+    # Also run Proxy job if libs changed
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.all == 'true' || github.event.inputs.proxy == 'true')) || (github.event_name != 'workflow_dispatch' && (needs.changes.outputs.proxy == 'true' || needs.changes.outputs.libs == 'true')) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go (Proxy)
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.2"
+      - name: Build Proxy
+        run: cd proxy/; go mod vendor; make build
+      - name: Test Proxy
+        run: cd proxy/; make test
+      - name: golangci-lint - Proxy (non-blocking)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: proxy
+          args: --config ../.github/golangci.yml --issues-exit-code=0
+
+  blocklists:
+    runs-on: ubuntu-latest
+    needs: changes
+    # Also run Blocklists job if libs changed
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.all == 'true' || github.event.inputs.blocklists == 'true')) || (github.event_name != 'workflow_dispatch' && (needs.changes.outputs.blocklists == 'true' || needs.changes.outputs.libs == 'true')) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go (Blocklists)
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.2"
+      - name: Build Blocklists
+        run: cd blocklists/; go mod vendor; make build
+      - name: Test Blocklists
+        run: cd blocklists/; make test
+      - name: golangci-lint - Blocklists (non-blocking)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: blocklists
+          args: --config ../.github/golangci.yml --issues-exit-code=0
+
+  dnscheck:
+    runs-on: ubuntu-latest
+    needs: changes
+    # Also run DNSCheck job if libs changed
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.all == 'true' || github.event.inputs.dnscheck == 'true')) || (github.event_name != 'workflow_dispatch' && (needs.changes.outputs.dnscheck == 'true' || needs.changes.outputs.libs == 'true')) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go (DNSCheck)
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.2"
+      - name: Build DNSCheck
+        run: cd dnscheck/; go mod vendor; make build
+      - name: golangci-lint - DNSCheck (non-blocking)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: dnscheck
+          args: --config ../.github/golangci.yml --issues-exit-code=0

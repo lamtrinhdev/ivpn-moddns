@@ -1,0 +1,2 @@
+export const AUTH_KEY = "isAuthenticated";
+export const PASSWORD_COMPLEXITY_RULES = "Password must be 12-64 characters, contain at least one uppercase letter, one lowercase letter, one number, and one special character."

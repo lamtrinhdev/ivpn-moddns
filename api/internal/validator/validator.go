@@ -1,0 +1,156 @@
+package validator
+
+import (
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
+)
+
+const (
+	// TODO: implement IPv4 and IPv6 wildcard patterns
+	// IPv4WildcardRegex = `^(\*|[0-9]+)\.(\*|[0-9]+)\.(\*|[0-9]+)\.(\*|[0-9]+)$`
+	// IPv6WildcardRegex = `^(\*|[0-9a-fA-F:]+)(:\*|:[0-9a-fA-F]+)*$`
+	FQDNWildcardRegex = `^[a-zA-Z0-9-]*\*[a-zA-Z0-9-]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)*$`
+)
+
+var wildcardPatterns = map[string]string{
+	// "ipv4": IPv4WildcardRegex,
+	// "ipv6": IPv6WildcardRegex,
+	"fqdn": FQDNWildcardRegex,
+}
+
+type ErrorResponse struct {
+	Error       bool
+	FailedField string
+	Tag         string
+	Value       any
+}
+
+type APIValidator struct {
+	Validator       *validator.Validate
+	WildcardRegexes map[string]*regexp.Regexp
+}
+
+func NewAPIValidator() (*APIValidator, error) {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	apiValidator := &APIValidator{
+		Validator:       validate,
+		WildcardRegexes: make(map[string]*regexp.Regexp),
+	}
+	err := apiValidator.Validator.RegisterValidation("password", passwordValidation)
+	if err != nil {
+		return nil, err
+	}
+	err = apiValidator.Validator.RegisterValidation("fqdn_wildcard", apiValidator.wildcardValidation)
+	if err != nil {
+		return nil, err
+	}
+	for key, pattern := range wildcardPatterns {
+		compiled, err := regexp.Compile(pattern)
+		if err != nil {
+			log.Error().Err(err).Msg("Error compiling pattern")
+			return nil, err
+		}
+		apiValidator.WildcardRegexes[key] = compiled
+	}
+	return apiValidator, nil
+}
+
+func (v APIValidator) Validate(data any) []ErrorResponse {
+	validationErrors := []ErrorResponse{}
+
+	errs := v.Validator.Struct(data)
+	if errs != nil {
+		for _, err := range errs.(validator.ValidationErrors) {
+			var elem ErrorResponse
+
+			elem.FailedField = err.Field() // Export struct field name
+			elem.Tag = err.Tag()           // Export struct tag
+			elem.Value = err.Value()       // Export field value
+			elem.Error = true
+
+			validationErrors = append(validationErrors, elem)
+		}
+	}
+
+	return validationErrors
+}
+
+// ValidateRequest validates the request payload according to the provided struct tags
+func (v APIValidator) ValidateRequest(c *fiber.Ctx, payload any, errMsg string) []string {
+	errMsgs := make([]string, 0)
+	if errs := v.Validate(payload); len(errs) > 0 && errs[0].Error {
+
+		for _, err := range errs {
+			validationErr := fmt.Sprintf(
+				"[%s]: Needs to implement '%s'",
+				err.FailedField,
+				err.Tag,
+			)
+			log.Error().Str("path", c.Route().Path).Str("tag", err.Tag).Err(errors.New("validation error")).Msg(validationErr)
+			errMsgs = append(errMsgs, validationErr)
+		}
+
+		return errMsgs
+	}
+	return errMsgs
+}
+
+// Custom validation function for wildcard patterns in FQDN and IP addresses
+func (v APIValidator) wildcardValidation(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+
+	// If no wildcard, skip validation (will be handled by other validators)
+	if !strings.Contains(value, "*") {
+		return false
+	}
+
+	// Check if the value matches any of the wildcard patterns
+	for _, re := range v.WildcardRegexes {
+		matched := re.MatchString(value)
+		if matched {
+			return true
+		}
+	}
+
+	return false
+}
+
+// passowrdValidation validates the password according to the complexity criteria
+func passwordValidation(fl validator.FieldLevel) bool {
+	return ValidatePassword(fl.Field().String())
+}
+
+func ValidatePassword(password string) bool {
+	if len(password) < 12 || len(password) > 64 {
+		return false
+	}
+
+	var uppercase = regexp.MustCompile(`[A-Z]`).MatchString
+	var lowercase = regexp.MustCompile(`[a-z]`).MatchString
+	var number = regexp.MustCompile(`[0-9]`).MatchString
+	var specialChar = regexp.MustCompile(`[!@#$%^&*(),;.?":{}\[\]|<>-_]`).MatchString
+
+	if !uppercase(password) {
+		return false
+	}
+
+	if !lowercase(password) {
+		return false
+	}
+
+	if !number(password) {
+		return false
+	}
+
+	if !specialChar(password) {
+		return false
+	}
+
+	return true
+}

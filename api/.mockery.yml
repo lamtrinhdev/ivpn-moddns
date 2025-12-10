@@ -1,0 +1,41 @@
+force-file-write: true
+formatter: goimports
+generate: true
+include-auto-generated: false
+log-level: info
+require-template-schema-exists: true
+template: testify
+template-schema: '{{.Template}}.schema.json'
+packages:
+  github.com/ivpn/dns/api/service:
+    config:
+      all: true
+      recursive: true
+      pkgname: 'mocks'
+      dir: './mocks'
+      filename: "{{.InterfaceName | snakecase}}.go"
+      structname: '{{.InterfaceName}}'
+  github.com/ivpn/dns/api/db:
+    config:
+      all: true
+      recursive: true
+      pkgname: 'mocks'
+      dir: './mocks'
+      filename: "{{.InterfaceName | snakecase}}.go"
+      structname: '{{.InterfaceName}}'
+  github.com/ivpn/dns/api/db/repository:
+    config:
+      all: true
+      recursive: true
+      pkgname: 'mocks'
+      dir: './mocks'
+      filename: "{{.InterfaceName | snakecase}}.go"
+      structname: '{{.InterfaceName}}'
+  github.com/ivpn/dns/api:
+    config:
+      all: true
+      recursive: true
+      pkgname: 'mocks'
+      dir: './mocks'
+      filename: "{{.InterfaceName | snakecase}}_{{.SrcPackageName | snakecase}}.go"
+      structname: '{{.InterfaceName}}{{.SrcPackageName}}'

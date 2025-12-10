@@ -1,0 +1,26 @@
+package model
+
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+type QueryLog struct {
+	ID         primitive.ObjectID `json:"id" bson:"_id"`
+	Timestamp  time.Time          `json:"timestamp" bson:"timestamp"`
+	ProfileID  string             `json:"profile_id" bson:"profile_id"`
+	DeviceId   string             `json:"device_id" bson:"device_id"`
+	Status     string             `json:"status" bson:"status"`
+	Reasons    []string           `json:"reasons" bson:"reasons"`
+	DNSRequest DNSRequest         `json:"dns_request" bson:"dns_request"`
+	ClientIP   string             `json:"client_ip" bson:"client_ip"`
+	Protocol   string             `json:"protocol" bson:"protocol"`
+}
+
+type DNSRequest struct {
+	Domain       string `json:"domain" bson:"domain"`
+	QueryType    string `json:"query_type" bson:"query_type"`
+	ResponseCode string `json:"response_code" bson:"response_code"`
+	DNSSEC       bool   `json:"dnssec" bson:"dnssec"`
+}

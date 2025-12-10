@@ -1,0 +1,374 @@
+import { useEffect, useRef, useState, useCallback, type JSX } from "react";
+import type { AxiosError } from "axios";
+
+interface NetworkError extends AxiosError { code?: string }
+import { toast } from "sonner";
+
+import type { ModelAccount, ModelProfile, ModelQueryLog } from "@/api/client";
+import Filters from "./Filters";
+import NoLogs from "./NoLogs";
+import LogsNotActive from "./LogsNotActive";
+import QueryLogCard from "./QueryLogCard";
+import api from "@/api/api";
+import { useAppStore } from "@/store/general";
+
+const QUERY_LIMIT = 25;
+
+interface QueryLogsProps {
+    account: ModelAccount;
+    profiles: ModelProfile[];
+}
+
+const QueryLogs = ({ profiles }: QueryLogsProps): JSX.Element => {
+    const [logs, setLogs] = useState<ModelQueryLog[]>([]);
+    const [logoMap, setLogoMap] = useState<Record<string, string>>({});
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0); // Add trigger for forced refresh
+    const [fadeClass, setFadeClass] = useState('opacity-100 transition-opacity duration-300 ease-in-out'); // Track fade animation state
+
+    // Search input (uncommitted while typing) and committed value that triggers requests
+    const [searchInputValue, setSearchInputValue] = useState("");
+    const [committedSearchValue, setCommittedSearchValue] = useState("");
+    const [filterValue, setFilterValue] = useState("all");
+    const [sortValue, setSortValue] = useState("created");
+    const [timespanValue, setTimespanValue] = useState<string | undefined>(undefined);
+    const [deviceIdValue, setDeviceIdValue] = useState<string | undefined>(undefined);
+
+    // Maintain a separate list of all available device IDs (not filtered by current selection)
+    const [allAvailableDeviceIds, setAllAvailableDeviceIds] = useState<string[]>([]);
+
+    // Compose filters object for API
+    const filters = {
+        Limit: QUERY_LIMIT,
+        Status: filterValue === "all" ? undefined : filterValue,
+        Timespan: { Value: timespanValue === "all" ? undefined : timespanValue },
+        Search: committedSearchValue,
+        Sort: sortValue,
+    };
+
+    const observer = useRef<IntersectionObserver | null>(null);
+    const lastLogRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            if (loading) return;
+            if (observer.current) observer.current.disconnect();
+            observer.current = new window.IntersectionObserver(entries => {
+                if (entries[0].isIntersecting && hasMore) {
+                    setPage(prev => prev + 1);
+                }
+            });
+            if (node) observer.current.observe(node);
+        },
+        [loading, hasMore]
+    );
+
+    const activeProfile = useAppStore((state) => state.activeProfile);
+    const { setActiveProfile } = useAppStore();
+
+    // Set active profile from profiles prop when component loads
+    useEffect(() => {
+        if (profiles.length > 0) {
+            if (activeProfile?.profile_id) {
+                // Find the profile with matching ID from profiles prop and overwrite activeProfile
+                const matchingProfile = profiles.find(profile => profile.profile_id === activeProfile.profile_id);
+                if (matchingProfile && JSON.stringify(matchingProfile) !== JSON.stringify(activeProfile)) {
+                    // Only update if the profile data has actually changed
+                    setActiveProfile(matchingProfile);
+                }
+            } else {
+                // If no active profile, set the first one
+                setActiveProfile(profiles[0]);
+            }
+        }
+    }, [profiles, setActiveProfile]);
+
+    // Reset logs, device IDs and page when committed filters change
+    useEffect(() => {
+        setLogs([]);
+        setPage(1);
+        setHasMore(true);
+        setAllAvailableDeviceIds([]);
+    }, [committedSearchValue, filterValue, sortValue, timespanValue, deviceIdValue]);
+
+    const commitSearch = useCallback(() => {
+        setCommittedSearchValue(prev => prev === searchInputValue ? prev : searchInputValue);
+    }, [searchInputValue]);
+
+    // Fetch logs and then fetch logos for the batch
+    useEffect(() => {
+        let cancelled = false;
+        const fetchLogs = async () => {
+            // Don't fetch if no active profile
+            if (!activeProfile?.profile_id) {
+                setLoading(false);
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+
+            // Start fade-out animation only for page 1 (refresh)
+            if (page === 1) {
+                setFadeClass('opacity-0 transition-opacity duration-200 ease-out');
+            }
+
+            try {
+                // Status is already handled in filters.Status
+                // Use expanded limit on first page to gather more device IDs; subsequent pages respect configured limit
+                const effectiveLimit = (page === 1 && !isAutoRefreshing) ? 100 : filters.Limit;
+                const searchParam = committedSearchValue || undefined;
+                const response = await api.Client.queryLogsApi.apiV1ProfilesIdLogsGet(
+                    activeProfile.profile_id,
+                    page,
+                    effectiveLimit,
+                    filters.Status,
+                    filters.Timespan.Value,
+                    deviceIdValue || undefined,
+                    searchParam
+                );
+                if (response.status === 200) {
+                    const newLogs = response.data || [];
+
+                    // --- Batch logo fetching ---
+                    // 1. Collect unique root domains (only if domain logging enabled)
+                    const domainLoggingEnabled = activeProfile?.settings?.logs?.log_domains !== false;
+                    if (domainLoggingEnabled) {
+                        const domains = Array.from(
+                            new Set(
+                                newLogs.map(log => {
+                                    if (log.dns_request?.domain) {
+                                        let domain = log.dns_request.domain.replace(/\.$/, "");
+                                        const parts = domain.split(".");
+                                        if (parts.length > 2) domain = parts.slice(-2).join(".");
+                                        return domain;
+                                    }
+                                    return '';
+                                }).filter(Boolean)
+                            )
+                        );
+
+                        // 2. Fetch logos for these domains
+                        if (domains.length > 0) {
+                            try {
+                                const logosResp = await api.Client.auxiliaryApi.apiV1AuxiliaryLogosPost({ domains });
+                                // logos endpoint returns shape: { logos: { [domain]: dataUrl }, errors: { [domain]: reason } }
+                                if (logosResp.status === 200 && (logosResp.data as any)?.logos) {
+                                    const data = logosResp.data as { logos?: Record<string, string> };
+                                    if (data.logos) {
+                                        setLogoMap(prev => ({ ...prev, ...data.logos }));
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Logo fetch error:', e); // Debug log
+                            }
+                        }
+                    }
+                    // --- End batch logo fetching ---
+
+                    // Set logs and update state
+                    setLogs(prev => (page === 1 ? newLogs : [...prev, ...newLogs]));
+                    setHasMore(newLogs.length === effectiveLimit);
+
+                    // Accumulate unique device IDs progressively
+                    setAllAvailableDeviceIds(prev => {
+                        const merged = new Set(prev);
+                        response.data.forEach(log => {
+                            if (log.device_id) merged.add(log.device_id);
+                        });
+                        return Array.from(merged).sort();
+                    });
+
+
+                    // Trigger fade-in animation with a delay to ensure content is rendered
+                    if (page === 1) {
+                        setTimeout(() => {
+                            setFadeClass('opacity-100 transition-opacity duration-200 ease-in');
+                        }, 100);
+                    }
+                } else {
+                    setHasMore(false);
+                    if (page === 1) {
+                        setFadeClass('opacity-100 transition-opacity duration-400 ease-in-out');
+                    }
+                }
+            } catch (err: unknown) {
+                // Handle different HTTP error codes with specific messages
+                let errorMessage = "Failed to load logs";
+                const httpErr = err as AxiosError & { code?: string };
+                const status = httpErr.response?.status;
+                if (status === 429) {
+                    errorMessage = "Too many requests. Please wait a moment before trying again.";
+                } else if (status === 500) {
+                    errorMessage = "Server error occurred while loading logs.";
+                } else if (status === 404) {
+                    errorMessage = "Profile not found.";
+                } else if ((httpErr as NetworkError)?.code === 'NETWORK_ERROR' || !httpErr.response) {
+                    errorMessage = "Network error. Please check your connection.";
+                }
+
+                toast.error(errorMessage);
+                setHasMore(false);
+                if (page === 1) {
+                    setFadeClass('opacity-100 transition-opacity duration-300 ease-in-out');
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+        fetchLogs();
+        return () => {
+            cancelled = true;
+        };
+    }, [page, filters.Limit, filters.Status, filters.Timespan.Value, filters.Search, filters.Sort, activeProfile, refreshTrigger, deviceIdValue]);
+
+    // Auto-refresh effect
+    useEffect(() => {
+        let interval: NodeJS.Timeout | null = null;
+
+        if (isAutoRefreshing && activeProfile?.profile_id) {
+            interval = setInterval(() => {
+                // Force refresh by incrementing trigger and resetting to first page
+                setPage(1);
+                setLogs([]);
+                setHasMore(true);
+                setRefreshTrigger(prev => prev + 1);
+            }, 10000); // 10 seconds
+        }
+
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+    }, [isAutoRefreshing, activeProfile?.profile_id]);
+
+    // Handle auto-refresh toggle
+    const handleToggleAutoRefresh = () => {
+        setIsAutoRefreshing(prev => !prev);
+        if (!isAutoRefreshing) {
+            // When starting auto-refresh, immediately refresh once
+            setLogs([]);
+            setPage(1);
+            setHasMore(true);
+            setRefreshTrigger(prev => prev + 1);
+        }
+    };
+
+    // Handle manual refresh
+    const handleRefresh = () => {
+        setLogs([]);
+        setPage(1);
+        setHasMore(true);
+        setRefreshTrigger(prev => prev + 1);
+    };
+
+    const logsEnabled =
+        activeProfile?.settings?.logs.enabled !== false; // default to true if undefined
+
+    return (
+        <div className="flex flex-col flex-1 w-full h-full min-h-screen md:min-h-0 items-start gap-6 p-6 pt-8 md:pt-8 md:p-8 overflow-visible bg-[var(--shadcn-ui-app-background)]">
+            <div className="flex flex-col items-start gap-6 relative flex-1 self-stretch grow w-full">
+                {/* Page Description */}
+                <section className="w-full">
+                    <div className="flex flex-col gap-1">
+                        <p className="text-[var(--tailwind-colors-slate-200)] text-sm md:text-base leading-5 md:leading-10">
+                            Monitor and analyze DNS queries in real-time. View blocked and processed requests for your active profile.
+                        </p>
+                    </div>
+                </section>
+
+                <div className="flex w-full h-full flex-1 items-start relative min-h-0">
+                    <div className="flex flex-col flex-1 h-full w-full min-h-0">
+                        <div className="flex flex-col flex-1 items-start gap-3 relative self-stretch w-full min-h-[50vh] md:min-h-[60vh]">
+                            <Filters
+                                searchInputValue={searchInputValue}
+                                onSearchInputChange={setSearchInputValue}
+                                onSearchCommit={commitSearch}
+                                filterValue={filterValue}
+                                onFilterChange={setFilterValue}
+                                sortValue={sortValue}
+                                onSortChange={setSortValue}
+                                onRefresh={handleRefresh}
+                                timespanValue={timespanValue}
+                                onTimespanChange={setTimespanValue}
+                                isAutoRefreshing={isAutoRefreshing}
+                                onToggleAutoRefresh={handleToggleAutoRefresh}
+                                deviceIdValue={deviceIdValue}
+                                onDeviceIdChange={setDeviceIdValue}
+                                availableDeviceIds={allAvailableDeviceIds}
+                            />
+
+                            <div className="flex flex-col items-start gap-3 md:gap-4 relative flex-1 self-stretch w-full grow min-w-0 overflow-x-hidden">
+                                <div className="flex flex-col items-start gap-2 relative flex-1 self-stretch w-full grow rounded-md min-w-0 overflow-x-hidden">
+                                    {!logsEnabled && (
+                                        <div className="flex flex-col w-full grow bg-[var(--variable-collection-surface)] rounded-lg overflow-hidden border-0">
+                                            <div className="flex flex-col h-auto md:h-[652px] items-start gap-3 md:gap-8 p-4 pt-3 md:pt-4 relative self-stretch w-full">
+                                                <div className="flex flex-col items-center justify-start md:justify-center gap-2.5 relative self-stretch w-full md:flex-1 md:grow">
+                                                    <LogsNotActive profile={activeProfile ?? profiles[0]} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {logsEnabled && logs.length === 0 && !loading && (
+                                        <div className="flex flex-col w-full grow bg-[var(--variable-collection-surface)] rounded-lg overflow-hidden border-0" data-testid="logs-empty-state">
+                                            <div className="flex flex-col h-auto md:h-[652px] items-start gap-3 md:gap-8 p-4 pt-3 md:pt-4 relative self-stretch w-full">
+                                                <div className="flex flex-col items-center justify-start md:justify-center gap-2.5 relative self-stretch w-full md:flex-1 md:grow">
+                                                    <NoLogs isSearchActive={committedSearchValue.trim().length > 0} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {logsEnabled && (
+                                        <div className="relative flex-1 w-full h-full overflow-y-auto px-0" data-testid="logs-scroll-container">
+                                            <div className={`flex flex-col gap-1.5 md:gap-2 py-1.5 md:py-2 min-h-full bg-[var(--shadcn-ui-app-background)] overflow-x-hidden ${fadeClass || 'opacity-100'}`}>
+                                                {logs.map((log, index) => {
+                                                    const isLast = index === logs.length - 1;
+                                                    // Only attempt logo resolution if a domain exists
+                                                    let logoUrl: string | undefined;
+                                                    if (log.dns_request?.domain) {
+                                                        let domain = log.dns_request.domain.replace(/\.$/, "");
+                                                        const domainParts = domain.split(".");
+                                                        if (domainParts.length > 2) {
+                                                            domain = domainParts.slice(-2).join(".");
+                                                        }
+                                                        // logoMap already stores domain -> logoUrl directly
+                                                        logoUrl = logoMap[domain];
+                                                    }
+                                                    return (
+                                                        <QueryLogCard
+                                                            key={`${log.profile_id}-${log.timestamp}-${index}`}
+                                                            log={log}
+                                                            logoUrl={logoUrl}
+                                                            isLast={isLast}
+                                                            lastLogRef={isLast ? lastLogRef : undefined}
+                                                        />
+                                                    );
+                                                })}
+                                                {loading && (
+                                                    <div className="w-full text-center py-4 text-[var(--tailwind-colors-slate-400)]">
+                                                        Loading...
+                                                    </div>
+                                                )}
+                                                {error && (
+                                                    <div className="w-full text-center py-4 text-[var(--tailwind-colors-red-500)]">
+                                                        {error}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default QueryLogs;

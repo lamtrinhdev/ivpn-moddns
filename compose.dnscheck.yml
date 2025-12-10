@@ -1,0 +1,22 @@
+services:
+  dnscheck:
+    build:
+      context: ./dnscheck
+      dockerfile: Dockerfile
+    image: dnscheck:latest
+    restart: always
+    command: sleep infinity
+    networks:
+      - dnsnetwork
+    container_name: dnscheck
+    ports:
+      - "80:3000"
+      - "30000:53/udp"
+      - "30000:53/tcp"
+    volumes:
+      - ./dnscheck:/app
+      - ./dnscheck/GeoLite2-ASN/:/opt/dnscheck/GeoIP
+      - ./dnscheck/GeoLite2-City/:/opt/dnscheck/GeoIPCity
+      # - ./certs:/certs
+    env_file:
+      - ./dnscheck/.env

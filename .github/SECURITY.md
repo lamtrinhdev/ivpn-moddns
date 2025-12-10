@@ -1,0 +1,71 @@
+# Security Policy
+
+## Reporting a security vulnerability to IVPN
+
+If you believe you have found a security vulnerability, **DO NOT CREATE AN ISSUE**. Instead, please send an email to security@ivpn.net or file a report directly on GitHub with [Private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability). We treat all reports with the highest priority and confidentiality.
+
+## Incident resolution process
+
+After this type of report has been submitted, a security vulnerability will be privately discussed, fixed and then publicly disclosed in a security advisory, involving the following steps:
+
+* Confirm the problem and determine the affected versions.   
+* Audit code to find any potential similar problems.  
+* Prepare fixes for all releases still under maintenance. These fixes will be released as fast as possible.  
+* Publicly disclose security problem in a security advisory.
+
+## PGP Key
+
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+wbDjWDs9ikB5/YfKyJ4=
+=ogpK
+-----END PGP PUBLIC KEY BLOCK-----
+```

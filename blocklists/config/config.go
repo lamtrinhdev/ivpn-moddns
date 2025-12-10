@@ -1,0 +1,90 @@
+package config
+
+import (
+	"os"
+	"strings"
+
+	"github.com/ivpn/dns/blocklists/updater"
+	"github.com/ivpn/dns/libs/cache"
+	"github.com/ivpn/dns/libs/store"
+)
+
+// Config represents the application configuration
+type Config struct {
+	Server  *ServerConfig
+	DB      *store.Config
+	Cache   *cache.Config
+	Updater *UpdaterConfig
+	Sentry  *SentryConfig
+}
+
+// ServerConfig represents the server configuration
+type ServerConfig struct {
+	Name string
+}
+
+// UpdaterConfig represents the updater configuration
+type UpdaterConfig struct {
+	Type       string
+	SourcesDir string
+}
+
+// SentryConfig represents the Sentry configuration
+type SentryConfig struct {
+	DSN         string
+	Environment string
+	Release     string
+}
+
+// New creates a new Config instance
+func New() (*Config, error) {
+	updaterType := os.Getenv("UPDATER_TYPE")
+	if updaterType == "" {
+		updaterType = updater.UpdaterTypeStandard
+	}
+
+	cacheAddrs := strings.Split(os.Getenv("CACHE_ADDRESSES"), ",")
+
+	return &Config{
+		Server: &ServerConfig{
+			Name: os.Getenv("SERVER_NAME"),
+		},
+		DB: &store.Config{
+			DbURI:    os.Getenv("DB_URI"),
+			Name:     os.Getenv("DB_NAME"),
+			Username: os.Getenv("DB_USERNAME"),
+			Password: os.Getenv("DB_PASSWORD"),
+			AuthSource: func() string {
+				v := os.Getenv("DB_AUTH_SOURCE")
+				if v == "" {
+					return "dns"
+				}
+				return v
+			}(),
+			MigrationsSource: os.Getenv("DB_MIGRATIONS_SOURCE"),
+		},
+		Cache: &cache.Config{
+			Address:               os.Getenv("CACHE_ADDRESS"),
+			FailoverAddresses:     cacheAddrs,
+			Username:              os.Getenv("CACHE_USERNAME"),
+			Password:              os.Getenv("CACHE_PASSWORD"),
+			FailoverPassword:      os.Getenv("CACHE_FAILOVER_PASSWORD"),
+			FailoverUsername:      os.Getenv("CACHE_FAILOVER_USERNAME"),
+			MasterName:            os.Getenv("CACHE_MASTER_NAME"),
+			TLSEnabled:            os.Getenv("CACHE_TLS_ENABLED") == "true",
+			CertFile:              os.Getenv("CACHE_CERT_FILE"),
+			KeyFile:               os.Getenv("CACHE_KEY_FILE"),
+			CACertFile:            os.Getenv("CACHE_CA_CERT_FILE"),
+			TLSInsecureSkipVerify: os.Getenv("CACHE_TLS_INSECURE_SKIP_VERIFY") == "true",
+		},
+		Updater: &UpdaterConfig{
+			Type:       updaterType,
+			SourcesDir: os.Getenv("UPDATER_SOURCES_DIR"),
+		},
+		Sentry: &SentryConfig{
+			DSN:         os.Getenv("SENTRY_DSN"),
+			Environment: os.Getenv("SENTRY_ENVIRONMENT"),
+			Release:     os.Getenv("SENTRY_RELEASE"),
+		},
+	}, nil
+}
