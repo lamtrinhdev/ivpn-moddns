@@ -61,8 +61,16 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
     else deviceIdOrIp = rawDeviceId.slice(0, 36);
 
     const DOMAIN_TRUNCATE_THRESHOLD = 65; // existing logic threshold
+    const MOBILE_EXPANDED_DOMAIN_LIMIT = 30;
+    const TIMESTAMP_COLLAPSED_MAX_HEIGHT = 24;
+    const TIMESTAMP_EXPANDED_MAX_HEIGHT = 48;
     const isDomainTruncatable = rawDomain ? rawDomain.length > DOMAIN_TRUNCATE_THRESHOLD : false;
     const truncatedDomain = rawDomain && isDomainTruncatable ? rawDomain.slice(0, DOMAIN_TRUNCATE_THRESHOLD) + '…' : rawDomain;
+    const mobileExpandedDomain = rawDomain
+        ? rawDomain.length > MOBILE_EXPANDED_DOMAIN_LIMIT
+            ? rawDomain.slice(0, MOBILE_EXPANDED_DOMAIN_LIMIT) + '…'
+            : rawDomain
+        : undefined;
     const isBlocked = log.status === "blocked";
     const protocolLabel = log?.protocol ? log.protocol.toUpperCase() : '—';
 
@@ -98,9 +106,9 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
                             </div>
                         </div>
                         {isMobile && (
-                            <div className="md:hidden flex flex-col gap-1">
+                            <div className="md:hidden flex flex-col gap-2">
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wide text-[var(--tailwind-colors-rdns-600)]">
+                                    <div className="flex items-center gap-2.5 text-[10px] uppercase font-semibold tracking-wide text-[var(--tailwind-colors-rdns-600)]">
                                         <span>{protocolLabel}</span>
                                         {isBlocked && (
                                             <Badge
@@ -114,14 +122,21 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
                                         <span data-testid="querylog-device-id-full">{deviceIdOrIp}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 min-w-0">
+                                <div className={`flex gap-x-2 gap-y-2 min-w-0 flex-wrap transition-all duration-300 ease-out ${timestampExpanded ? 'items-start' : 'items-center'}`}>
+                                    <div className="flex items-center gap-2 min-w-0 flex-1 order-1 transition-all duration-300 ease-out">
                                         <div className="w-5 h-5 flex-shrink-0">
                                             <LogIcon logoUrl={logoUrl} domain={domain || 'unknown'} />
                                         </div>
-                                        <div className="relative flex items-center gap-2 font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-white text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] truncate max-w-[220px] text-left">
+                                        <div className="relative flex flex-1 items-center gap-2 font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-white text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] truncate max-w-full text-left min-w-0">
                                             {rawDomain ? (
-                                                isDomainTruncatable ? (
+                                                timestampExpanded ? (
+                                                    <span
+                                                        className="truncate whitespace-nowrap"
+                                                        data-testid="querylog-domain-expanded"
+                                                    >
+                                                        {mobileExpandedDomain}
+                                                    </span>
+                                                ) : isDomainTruncatable ? (
                                                     <button
                                                         type="button"
                                                         aria-label={showFullDomainMobile ? 'Hide full domain' : 'Show full domain'}
@@ -139,7 +154,16 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
                                             )}
                                         </div>
                                     </div>
-                                    <TimestampDisplay timestamp={log.timestamp} onToggle={setTimestampExpanded} />
+                                    <div
+                                        className={`${timestampExpanded ? 'order-2 basis-full w-full flex justify-end' : 'order-2 flex-shrink-0 ml-auto self-stretch'} transition-[flex-basis,padding,margin] duration-300 ease-out`}
+                                    >
+                                        <div
+                                            className="overflow-hidden transition-[max-height] duration-300 ease-out"
+                                            style={{ maxHeight: timestampExpanded ? TIMESTAMP_EXPANDED_MAX_HEIGHT : TIMESTAMP_COLLAPSED_MAX_HEIGHT }}
+                                        >
+                                            <TimestampDisplay timestamp={log.timestamp} onToggle={setTimestampExpanded} />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -184,12 +208,24 @@ const TimestampDisplay = ({ timestamp, onToggle }: TimestampDisplayProps) => {
     return (
         <button
             type="button"
+            aria-expanded={expanded}
             onClick={() => setExpanded(e => { const next = !e; onToggle?.(next); return next; })}
-            className={`group relative w-fit font-text-xs-leading-5-normal font-[number:var(--text-xs-leading-5-normal-font-weight)] text-[var(--tailwind-colors-slate-100)] text-[length:var(--text-xs-leading-5-normal-font-size)] tracking-[var(--text-xs-leading-5-normal-letter-spacing)] leading-[var(--text-xs-leading-5-normal-line-height)] whitespace-nowrap [font-style:var(--text-xs-leading-5-normal-font-style)] inline-flex items-center gap-1 focus:outline-none cursor-pointer select-text transition-transform duration-200 ease-out ${expanded ? 'translate-y-4 md:translate-y-2 mt-0.5' : ''}`}
+            className={`group relative w-fit font-text-xs-leading-5-normal font-[number:var(--text-xs-leading-5-normal-font-weight)] text-[var(--tailwind-colors-slate-100)] text-[length:var(--text-xs-leading-5-normal-font-size)] tracking-[var(--text-xs-leading-5-normal-letter-spacing)] leading-[var(--text-xs-leading-5-normal-line-height)] whitespace-nowrap [font-style:var(--text-xs-leading-5-normal-font-style)] inline-flex items-center gap-1 focus:outline-none cursor-pointer select-text transition-all duration-300 ease-out ${expanded ? 'mt-0.5' : ''}`}
             title={expanded ? 'Show relative time' : 'Show full timestamp'}
         >
             <Clock className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-            {expanded ? absolute : relative}
+            <span className="relative inline-flex min-h-[20px]">
+                <span
+                    className={`whitespace-nowrap transition-all duration-200 ease-out ${expanded ? 'opacity-0 -translate-y-1 absolute left-0 top-0 pointer-events-none' : 'opacity-100 translate-y-0 relative'}`}
+                >
+                    {relative}
+                </span>
+                <span
+                    className={`whitespace-nowrap transition-all duration-200 ease-out ${expanded ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-1 absolute left-0 top-0 pointer-events-none'}`}
+                >
+                    {absolute}
+                </span>
+            </span>
         </button>
     );
 };
