@@ -23,7 +23,6 @@ var (
 	ErrFailedToUpdateAccount      = errors.New("failed to update account")
 	ErrFailedToDeleteAccount      = errors.New("failed to delete account")
 	ErrFailedToCreateCustomRule   = errors.New("failed to create custom rule")
-	ErrFailedToGetLogos           = errors.New("failed to get logos")
 	ErrFailedToDeleteCustomRule   = errors.New("failed to delete custom rule")
 	ErrFailedToEnableBlocklists   = errors.New("failed to enable blocklists")
 	ErrFailedToDisableBlocklists  = errors.New("failed to disable blocklists")

@@ -99,7 +99,6 @@ func (s *APIServer) RegisterRoutes() {
 	mobileconfig := v1.Group("/mobileconfig")
 	sessions := v1.Group("/sessions")
 	blocklists := v1.Group("/blocklists")
-	auxiliary := v1.Group("/auxiliary")
 	webauthn := v1.Group("/webauthn")
 	sub := v1.Group("/sub")
 
@@ -128,8 +127,6 @@ func (s *APIServer) RegisterRoutes() {
 	// Email verification OTP (requires auth)
 	verify.Post("/email/otp/request", middleware.NewLimit(10, 1*time.Minute), s.requestEmailVerificationOTP())
 	verify.Post("/email/otp/confirm", middleware.NewLimit(10, 1*time.Minute), s.verifyEmailOTP())
-
-	auxiliary.Post("/logos", middleware.NewLimit(20, 1*time.Minute), s.getBrandLogos())
 
 	blocklists.Get("", middleware.NewLimit(20, 1*time.Minute), s.getBlocklists())
 

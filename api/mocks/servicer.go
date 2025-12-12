@@ -13,7 +13,6 @@ import (
 	"github.com/ivpn/dns/api/api/requests"
 	"github.com/ivpn/dns/api/api/responses"
 	"github.com/ivpn/dns/api/model"
-	"github.com/ivpn/dns/api/service/auxiliary"
 	"github.com/ivpn/dns/api/service/profile"
 	mock "github.com/stretchr/testify/mock"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -1563,63 +1562,6 @@ func (_c *Servicer_EnableBlocklists_Call) Return(err error) *Servicer_EnableBloc
 }
 
 func (_c *Servicer_EnableBlocklists_Call) RunAndReturn(run func(ctx context.Context, accountId string, profileId string, blocklistIds []string) error) *Servicer_EnableBlocklists_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// FetchBrandLogos provides a mock function for the type Servicer
-func (_mock *Servicer) FetchBrandLogos(ctx context.Context, domains []string) auxiliary.BrandLogoResult {
-	ret := _mock.Called(ctx, domains)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FetchBrandLogos")
-	}
-
-	var r0 auxiliary.BrandLogoResult
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) auxiliary.BrandLogoResult); ok {
-		r0 = returnFunc(ctx, domains)
-	} else {
-		r0 = ret.Get(0).(auxiliary.BrandLogoResult)
-	}
-	return r0
-}
-
-// Servicer_FetchBrandLogos_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchBrandLogos'
-type Servicer_FetchBrandLogos_Call struct {
-	*mock.Call
-}
-
-// FetchBrandLogos is a helper method to define mock.On call
-//   - ctx context.Context
-//   - domains []string
-func (_e *Servicer_Expecter) FetchBrandLogos(ctx interface{}, domains interface{}) *Servicer_FetchBrandLogos_Call {
-	return &Servicer_FetchBrandLogos_Call{Call: _e.mock.On("FetchBrandLogos", ctx, domains)}
-}
-
-func (_c *Servicer_FetchBrandLogos_Call) Run(run func(ctx context.Context, domains []string)) *Servicer_FetchBrandLogos_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 []string
-		if args[1] != nil {
-			arg1 = args[1].([]string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *Servicer_FetchBrandLogos_Call) Return(brandLogoResult auxiliary.BrandLogoResult) *Servicer_FetchBrandLogos_Call {
-	_c.Call.Return(brandLogoResult)
-	return _c
-}
-
-func (_c *Servicer_FetchBrandLogos_Call) RunAndReturn(run func(ctx context.Context, domains []string) auxiliary.BrandLogoResult) *Servicer_FetchBrandLogos_Call {
 	_c.Call.Return(run)
 	return _c
 }
