@@ -107,7 +107,6 @@ Class | Method | HTTP request | Description
 *AuthenticationApi* | [**api_v1_webauthn_passkeys_get**](docs/AuthenticationApi.md#api_v1_webauthn_passkeys_get) | **GET** /api/v1/webauthn/passkeys | Get user passkeys
 *AuthenticationApi* | [**api_v1_webauthn_register_begin_post**](docs/AuthenticationApi.md#api_v1_webauthn_register_begin_post) | **POST** /api/v1/webauthn/register/begin | Begin passkey registration
 *AuthenticationApi* | [**api_v1_webauthn_register_finish_post**](docs/AuthenticationApi.md#api_v1_webauthn_register_finish_post) | **POST** /api/v1/webauthn/register/finish | Finish passkey registration
-*AuxiliaryApi* | [**api_v1_auxiliary_logos_post**](docs/AuxiliaryApi.md#api_v1_auxiliary_logos_post) | **POST** /api/v1/auxiliary/logos | Download brand logo(s) from Brandfetch
 *BlocklistsApi* | [**api_v1_blocklists_get**](docs/BlocklistsApi.md#api_v1_blocklists_get) | **GET** /api/v1/blocklists | Get blocklists data
 *ProfileApi* | [**api_v1_profiles_get**](docs/ProfileApi.md#api_v1_profiles_get) | **GET** /api/v1/profiles | Get profiles data
 *ProfileApi* | [**api_v1_profiles_id_blocklists_delete**](docs/ProfileApi.md#api_v1_profiles_id_blocklists_delete) | **DELETE** /api/v1/profiles/{id}/blocklists | Disable blocklists
@@ -136,7 +135,6 @@ Class | Method | HTTP request | Description
  - [ApiBlocklistsUpdates](docs/ApiBlocklistsUpdates.md)
  - [ApiCreateProfileBody](docs/ApiCreateProfileBody.md)
  - [ApiErrResponse](docs/ApiErrResponse.md)
- - [ApiLogoRequest](docs/ApiLogoRequest.md)
  - [ApiRegisterAccountBody](docs/ApiRegisterAccountBody.md)
  - [ApiVerifyEmailOTPBody](docs/ApiVerifyEmailOTPBody.md)
  - [ApiWebAuthnLoginBeginRequest](docs/ApiWebAuthnLoginBeginRequest.md)

@@ -20,7 +20,6 @@ __version__ = "1.0.0"
 from moddns.api.account_api import AccountApi
 from moddns.api.apple_mobileconfig_api import AppleMobileconfigApi
 from moddns.api.authentication_api import AuthenticationApi
-from moddns.api.auxiliary_api import AuxiliaryApi
 from moddns.api.blocklists_api import BlocklistsApi
 from moddns.api.profile_api import ProfileApi
 from moddns.api.query_logs_api import QueryLogsApi
@@ -44,7 +43,6 @@ from moddns.exceptions import ApiException
 from moddns.models.api_blocklists_updates import ApiBlocklistsUpdates
 from moddns.models.api_create_profile_body import ApiCreateProfileBody
 from moddns.models.api_err_response import ApiErrResponse
-from moddns.models.api_logo_request import ApiLogoRequest
 from moddns.models.api_register_account_body import ApiRegisterAccountBody
 from moddns.models.api_verify_email_otp_body import ApiVerifyEmailOTPBody
 from moddns.models.api_web_authn_login_begin_request import ApiWebAuthnLoginBeginRequest

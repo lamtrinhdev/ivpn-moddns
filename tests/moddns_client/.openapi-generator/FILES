@@ -8,14 +8,12 @@ docs/AccountApi.md
 docs/ApiBlocklistsUpdates.md
 docs/ApiCreateProfileBody.md
 docs/ApiErrResponse.md
-docs/ApiLogoRequest.md
 docs/ApiRegisterAccountBody.md
 docs/ApiVerifyEmailOTPBody.md
 docs/ApiWebAuthnLoginBeginRequest.md
 docs/ApiWebAuthnRegisterBeginRequest.md
 docs/AppleMobileconfigApi.md
 docs/AuthenticationApi.md
-docs/AuxiliaryApi.md
 docs/BlocklistsApi.md
 docs/ModelAccount.md
 docs/ModelAccountUpdate.md
@@ -92,7 +90,6 @@ moddns/api/__init__.py
 moddns/api/account_api.py
 moddns/api/apple_mobileconfig_api.py
 moddns/api/authentication_api.py
-moddns/api/auxiliary_api.py
 moddns/api/blocklists_api.py
 moddns/api/profile_api.py
 moddns/api/query_logs_api.py
@@ -108,7 +105,6 @@ moddns/models/__init__.py
 moddns/models/api_blocklists_updates.py
 moddns/models/api_create_profile_body.py
 moddns/models/api_err_response.py
-moddns/models/api_logo_request.py
 moddns/models/api_register_account_body.py
 moddns/models/api_verify_email_otp_body.py
 moddns/models/api_web_authn_login_begin_request.py
@@ -188,14 +184,12 @@ test/test_account_api.py
 test/test_api_blocklists_updates.py
 test/test_api_create_profile_body.py
 test/test_api_err_response.py
-test/test_api_logo_request.py
 test/test_api_register_account_body.py
 test/test_api_verify_email_otp_body.py
 test/test_api_web_authn_login_begin_request.py
 test/test_api_web_authn_register_begin_request.py
 test/test_apple_mobileconfig_api.py
 test/test_authentication_api.py
-test/test_auxiliary_api.py
 test/test_blocklists_api.py
 test/test_model_account.py
 test/test_model_account_update.py
