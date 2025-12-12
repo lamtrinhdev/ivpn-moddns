@@ -63,74 +63,111 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
     const DOMAIN_TRUNCATE_THRESHOLD = 65; // existing logic threshold
     const isDomainTruncatable = rawDomain ? rawDomain.length > DOMAIN_TRUNCATE_THRESHOLD : false;
     const truncatedDomain = rawDomain && isDomainTruncatable ? rawDomain.slice(0, DOMAIN_TRUNCATE_THRESHOLD) + '…' : rawDomain;
+    const isBlocked = log.status === "blocked";
+    const protocolLabel = log?.protocol ? log.protocol.toUpperCase() : '—';
 
     return (
         <div
             ref={isLast ? lastLogRef : undefined}
             className="w-full bg-[var(--variable-collection-surface)] rounded-[var(--primitives-radius-radius-md)] border-0"
         >
-            <div className={`flex h-auto md:h-[66px] items-stretch md:items-center justify-between gap-3 md:gap-4 px-3 md:pt-[var(--tailwind-primitives-gap-gap-3)] md:pr-[var(--tailwind-primitives-gap-gap-4)] md:pb-[var(--tailwind-primitives-gap-gap-3)] md:pl-[var(--tailwind-primitives-gap-gap-4)] min-w-0 py-2 md:py-0 transition-all duration-200 ease-out min-h-[64px] ${timestampExpanded ? 'pb-4 min-h-[84px]' : ''}`}>
-                <div className="flex items-center md:items-center gap-4 relative min-w-0 flex-1">
-                    <div className="inline-flex items-center gap-2 relative flex-[0_0_auto] min-w-0">
-                        <div className="relative w-5 h-5 flex-shrink-0">
-                            <LogIcon logoUrl={logoUrl} domain={domain || 'unknown'} />
+            <div className={`flex h-auto md:h-[66px] items-stretch md:items-center justify-between gap-3 md:gap-4 px-3 md:pt-[var(--tailwind-primitives-gap-gap-3)] md:pr-[var(--tailwind-primitives-gap-gap-4)] md:pb-[var(--tailwind-primitives-gap-gap-3)] md:pl-[var(--tailwind-primitives-gap-gap-4)] min-w-0 py-2 md:py-0 transition-all duration-200 ease-out min-h-[64px] ${timestampExpanded ? 'pb-3.5 min-h-[84px]' : ''}`}>
+                <div className="flex items-center gap-3 relative min-w-0 flex-1">
+                    <div className="flex flex-col gap-1 w-full">
+                        <div className="flex items-start gap-2">
+                            <div className="inline-flex items-center gap-2 relative min-w-0 flex-1">
+                                <div className="relative w-5 h-5 flex-shrink-0 hidden md:block">
+                                    <LogIcon logoUrl={logoUrl} domain={domain || 'unknown'} />
+                                </div>
+                                <div className="relative flex flex-col gap-1 min-w-0">
+                                    <div className="hidden md:flex items-center gap-2 font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-white text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] truncate max-w-[200px] md:max-w-[480px] lg:max-w-[560px]">
+                                        {rawDomain ? (
+                                            <Tooltip content={rawDomain} side="top" align="start" delay={150}>
+                                                <span
+                                                    className="truncate"
+                                                    data-testid={!isDomainTruncatable ? 'querylog-domain-full' : 'querylog-domain-truncated-desktop'}
+                                                >
+                                                    {isDomainTruncatable ? truncatedDomain : rawDomain}
+                                                </span>
+                                            </Tooltip>
+                                        ) : (
+                                            '-'
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="relative flex items-center gap-2 font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-white text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] truncate max-w-[200px] md:max-w-[480px] lg:max-w-[560px]">
-                            {rawDomain ? (
-                                <>
-                                    {/* Desktop span with tooltip (hidden on small screens) */}
-                                    <Tooltip content={rawDomain} side="top" align="start" delay={150}>
-                                        <span
-                                            className={`hidden md:inline truncate`}
-                                            data-testid={!isDomainTruncatable ? 'querylog-domain-full' : 'querylog-domain-truncated-desktop'}
-                                        >
-                                            {isDomainTruncatable ? truncatedDomain : rawDomain}
-                                        </span>
-                                    </Tooltip>
-                                    {/* Mobile button toggle (visible only below md) */}
-                                    {isDomainTruncatable ? (
-                                        <button
-                                            type="button"
-                                            aria-label={showFullDomainMobile ? 'Hide full domain' : 'Show full domain'}
-                                            onClick={() => setShowFullDomainMobile(v => !v)}
-                                            className="md:hidden truncate focus:outline-none active:scale-[0.98] transition-transform text-left"
-                                            data-testid={showFullDomainMobile ? 'querylog-domain-full' : 'querylog-domain-truncated'}
-                                        >
-                                            {showFullDomainMobile ? rawDomain : truncatedDomain}
-                                        </button>
-                                    ) : (
-                                        <span className="md:hidden truncate" data-testid="querylog-domain-full">{rawDomain}</span>
-                                    )}
-                                </>
-                            ) : (
-                                '-'
-                            )}
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-stretch md:items-center gap-3 md:gap-2.5 relative flex-[0_0_auto] min-w-0">
-                    <div className="flex flex-col md:flex-row items-start md:items-center md:gap-2.5 gap-1 flex-shrink-0">
-                        <div className="relative w-[60px] md:w-[100px] font-text-xs-leading-4-semibold font-semibold text-[10px] md:text-[length:var(--text-xs-leading-4-semibold-font-size)] text-[var(--tailwind-colors-rdns-600)] text-left md:text-center tracking-wide leading-4 md:leading-[var(--text-xs-leading-4-semibold-line-height)] uppercase order-0 md:order-1">
-                            {log?.protocol ? log.protocol.toUpperCase() : '—'}
-                        </div>
-                        {log.status === "blocked" && (
-                            <Badge className="order-1 md:order-0 inline-flex items-center justify-center px-2 py-0.5 md:pt-[var(--tailwind-primitives-padding-p-0-5)] md:pr-[var(--tailwind-primitives-padding-p-2-5)] md:pb-[var(--tailwind-primitives-padding-p-0-5)] md:pl-[var(--tailwind-primitives-padding-p-2-5)] bg-[var(--tailwind-colors-red-600)] rounded border-0 h-5 md:h-auto">
-                                <span className="font-text-xs-leading-4-semibold text-[10px] md:text-[length:var(--text-xs-leading-4-semibold-font-size)] leading-4 text-[var(--tailwind-colors-slate-50)] font-semibold">Blocked</span>
-                            </Badge>
+                        {isMobile && (
+                            <div className="md:hidden flex flex-col gap-1">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-1.5 text-[10px] uppercase font-semibold tracking-wide text-[var(--tailwind-colors-rdns-600)]">
+                                        <span>{protocolLabel}</span>
+                                        {isBlocked && (
+                                            <Badge
+                                                className="inline-flex items-center justify-center px-2 py-0.5 bg-[var(--tailwind-colors-red-600)] rounded border-0 h-5"
+                                            >
+                                                <span className="font-text-xs-leading-4-semibold text-[10px] leading-4 text-[var(--tailwind-colors-slate-50)] font-semibold">Blocked</span>
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1 max-w-[200px] font-text-sm-leading-5-semibold text-[var(--tailwind-colors-slate-50)] text-xs text-right">
+                                        <span data-testid="querylog-device-id-full">{deviceIdOrIp}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="w-5 h-5 flex-shrink-0">
+                                            <LogIcon logoUrl={logoUrl} domain={domain || 'unknown'} />
+                                        </div>
+                                        <div className="relative flex items-center gap-2 font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-white text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] truncate max-w-[220px] text-left">
+                                            {rawDomain ? (
+                                                isDomainTruncatable ? (
+                                                    <button
+                                                        type="button"
+                                                        aria-label={showFullDomainMobile ? 'Hide full domain' : 'Show full domain'}
+                                                        onClick={() => setShowFullDomainMobile(v => !v)}
+                                                        className="truncate focus:outline-none active:scale-[0.98] transition-transform text-left"
+                                                        data-testid={showFullDomainMobile ? 'querylog-domain-full' : 'querylog-domain-truncated'}
+                                                    >
+                                                        {showFullDomainMobile ? rawDomain : truncatedDomain}
+                                                    </button>
+                                                ) : (
+                                                    <span className="truncate" data-testid="querylog-domain-full">{rawDomain}</span>
+                                                )
+                                            ) : (
+                                                '-'
+                                            )}
+                                        </div>
+                                    </div>
+                                    <TimestampDisplay timestamp={log.timestamp} onToggle={setTimestampExpanded} />
+                                </div>
+                            </div>
                         )}
                     </div>
-                    <div className="flex flex-col w-[140px] md:w-[220px] lg:w-[280px] items-end justify-center gap-0.5 md:gap-[var(--tailwind-primitives-gap-gap-0-5)] relative min-w-0 flex-shrink-0">
-                        <div className="relative w-full mt-[-1.00px] font-text-sm-leading-5-semibold text-[var(--tailwind-colors-slate-50)] text-xs md:text-[length:var(--text-sm-leading-5-semibold-font-size)] leading-4 md:leading-[var(--text-sm-leading-5-semibold-line-height)] text-right">
-                            <span
-                                className="inline-flex items-center gap-1 max-w-full"
-                                data-testid="querylog-device-id-full"
-                            >
-                                {deviceIdOrIp}
-                            </span>
-                        </div>
-                        <TimestampDisplay timestamp={log.timestamp} onToggle={setTimestampExpanded} />
-                    </div>
                 </div>
+                {!isMobile && (
+                    <div className="flex items-stretch md:items-center gap-3 md:gap-2.5 relative flex-[0_0_auto] min-w-0">
+                        <div className="hidden md:flex flex-col md:flex-row items-start md:items-center md:gap-2.5 gap-1 flex-shrink-0">
+                            <div className="relative w-[60px] md:w-[100px] font-text-xs-leading-4-semibold font-semibold text-[10px] md:text-[length:var(--text-xs-leading-4-semibold-font-size)] text-[var(--tailwind-colors-rdns-600)] text-left md:text-center tracking-wide leading-4 md:leading-[var(--text-xs-leading-4-semibold-line-height)] uppercase order-0 md:order-1">
+                                {protocolLabel}
+                            </div>
+                            <Badge className={`order-1 md:order-0 inline-flex items-center justify-center px-2 py-0.5 md:pt-[var(--tailwind-primitives-padding-p-0-5)] md:pr-[var(--tailwind-primitives-padding-p-2-5)] md:pb-[var(--tailwind-primitives-padding-p-0-5)] md:pl-[var(--tailwind-primitives-padding-p-2-5)] bg-[var(--tailwind-colors-red-600)] rounded border-0 h-5 md:h-auto ${!isBlocked ? 'opacity-0 pointer-events-none select-none' : ''}`} aria-hidden={!isBlocked}>
+                                <span className="font-text-xs-leading-4-semibold text-[10px] md:text-[length:var(--text-xs-leading-4-semibold-font-size)] leading-4 text-[var(--tailwind-colors-slate-50)] font-semibold">Blocked</span>
+                            </Badge>
+                        </div>
+                        <div className="flex flex-col w-[140px] md:w-[220px] lg:w-[280px] items-end justify-center gap-0.5 md:gap-[var(--tailwind-primitives-gap-gap-0-5)] relative min-w-0 flex-shrink-0">
+                            <div className="relative w-full mt-[-1.00px] font-text-sm-leading-5-semibold text-[var(--tailwind-colors-slate-50)] text-xs md:text-[length:var(--text-sm-leading-5-semibold-font-size)] leading-4 md:leading-[var(--text-sm-leading-5-semibold-line-height)] text-right">
+                                <span
+                                    className="inline-flex items-center gap-1 max-w-full"
+                                    data-testid="querylog-device-id-full"
+                                >
+                                    {deviceIdOrIp}
+                                </span>
+                            </div>
+                            <TimestampDisplay timestamp={log.timestamp} onToggle={setTimestampExpanded} />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
