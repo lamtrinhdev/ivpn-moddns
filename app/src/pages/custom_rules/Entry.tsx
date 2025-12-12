@@ -4,13 +4,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 // import { Switch } from "@/components/ui/switch";
 import { Trash2 } from "lucide-react";
+import type { ModelCustomRule } from "@/api/client/api";
 
 interface CustomRuleEntryProps {
-    rule: any;
+    rule: ModelCustomRule;
     checked: boolean;
-    onCheck: (id: string | number, checked: boolean) => void;
-    onDelete: (id: string | number) => void;
-    logoMap: Record<string, string>;
+    onCheck: (id: string, checked: boolean) => void;
+    onDelete: (id: string) => void;
     isRemoving: boolean;
     hideDeleteButton?: boolean;
 }
@@ -20,7 +20,6 @@ const CustomRuleEntry: React.FC<CustomRuleEntryProps> = ({
     checked,
     onCheck,
     onDelete,
-    logoMap,
     isRemoving,
     hideDeleteButton = false,
 }) => {
@@ -46,21 +45,6 @@ const CustomRuleEntry: React.FC<CustomRuleEntryProps> = ({
                         className="w-4 h-4 border-solid border-[var(--tailwind-colors-rdns-600)]"
                     />
                     <div className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
-                        {(() => {
-                            let d = domain;
-                            const parts = d.split(".");
-                            if (parts.length > 2) d = parts.slice(-2).join(".");
-                            return logoMap[d.toLowerCase()]
-                                ? (
-                                    <img
-                                        src={logoMap[d.toLowerCase()]}
-                                        alt=""
-                                        className="w-5 h-5 rounded bg-white object-contain"
-                                        style={{ background: "#fff" }}
-                                    />
-                                )
-                                : null;
-                        })()}
                         <div className="relative w-fit font-text-sm-leading-5-normal font-normal text-white text-sm tracking-normal leading-5 whitespace-nowrap">
                             {domain}
                         </div>

@@ -1,116 +1,101 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MinusIcon, Search, Trash2 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback, useMemo, type JSX } from "react";
+import { Search } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, type JSX } from "react";
 import AlertCard from "@/components/general/AlertCard";
 import { useNavigate } from "react-router-dom";
 import CustomRulesSearch from "@/pages/custom_rules/Search";
 import { useAppStore } from "@/store/general";
 import api from "@/api/api";
 import { toast } from "sonner";
-import type { ModelAccount, ModelProfile } from "@/api/client/api";
-import NoRulesExist from "@/pages/custom_rules/NoRulesExist";
-import CustomRuleEntry from "@/pages/custom_rules/Entry";
+import type { ModelAccount, ModelCustomRule, ModelProfile, ResponsesCustomRuleBatchSkipped } from "@/api/client/api";
 import { RuleComposer, type RuleOption } from "@/pages/custom_rules/RuleComposer";
-import type { ResponsesCustomRuleBatchSkipped } from "@/api/client/api";
+import CustomRulesCard from "@/pages/custom_rules/CustomRulesCard";
+
+type RuleTab = "denylist" | "allowlist";
+
+const TAB_TO_ACTION: Record<RuleTab, "block" | "allow"> = {
+    denylist: "block",
+    allowlist: "allow",
+};
+
+interface ApiErrorLike {
+    response?: {
+        data?: {
+            error?: string;
+            message?: string;
+            detail?: string;
+        };
+    };
+    message?: string;
+}
+
+const formatApiError = (error: unknown, fallback: string): string => {
+    if (typeof error === "string") {
+        return error;
+    }
+
+    if (error && typeof error === "object") {
+        const err = error as ApiErrorLike;
+        const data = err.response?.data;
+        return data?.error ?? data?.message ?? data?.detail ?? err.message ?? fallback;
+    }
+
+    return fallback;
+};
 
 
 interface MainContentSectionProps {
     account: ModelAccount;
-    profiles: ModelProfile[];
+    profiles?: ModelProfile[];
 }
 
-export default function MainContentSection(_: Omit<MainContentSectionProps, "account">): JSX.Element {
+export default function MainContentSection({ profiles = [] }: Omit<MainContentSectionProps, "account">): JSX.Element {
     const [showAlert, setShowAlert] = useState(true);
     const [showSearch, setShowSearch] = useState(false);
-    const [activeTab, setActiveTab] = useState<"denylist" | "allowlist">("denylist");
+    const [activeTab, setActiveTab] = useState<RuleTab>("denylist");
     const [loading, setLoading] = useState(false);
-    const [logoMap, setLogoMap] = useState<Record<string, string>>({});
     const [searchValue, setSearchValue] = useState("");
-    const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
-    const [composerTokens, setComposerTokens] = useState<Record<"denylist" | "allowlist", RuleOption[]>>({
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [composerTokens, setComposerTokens] = useState<Record<RuleTab, RuleOption[]>>({
         denylist: [],
         allowlist: [],
     });
 
-    const updateComposerTokens = useCallback((action: "denylist" | "allowlist", next: RuleOption[]) => {
+    const updateComposerTokens = useCallback((tab: RuleTab, next: RuleOption[]) => {
         setComposerTokens(prev => ({
             ...prev,
-            [action]: next,
+            [tab]: next,
         }));
-    }, []);
-    const logoRequestedRef = useRef<Set<string>>(new Set());
+    }, [setComposerTokens]);
 
     const navigate = useNavigate();
 
     const activeProfile = useAppStore((state) => state.activeProfile);
     const setActiveProfile = useAppStore((state) => state.setActiveProfile);
-    const customRules = activeProfile?.settings?.custom_rules ?? [];
+
+    useEffect(() => {
+        if (!activeProfile && profiles.length > 0) {
+            setActiveProfile(profiles[0]);
+        }
+    }, [activeProfile, profiles, setActiveProfile]);
+
+    const customRules: ModelCustomRule[] = activeProfile?.settings?.custom_rules ?? [];
     const denylist = customRules.filter(rule => rule.action === "block");
     const allowlist = customRules.filter(rule => rule.action === "allow");
 
     useEffect(() => {
         setComposerTokens({ denylist: [], allowlist: [] });
+        setSelectedIds([]);
     }, [activeProfile?.profile_id]);
 
-    // Helper to get unique root domains (same logic as in Logs.tsx, but skip IPs)
-    const getUniqueDomains = useCallback(() => {
-        const allRules = [...denylist, ...allowlist];
-        return Array.from(
-            new Set(
-                allRules
-                    .map(rule => {
-                        let domain = rule.value?.replace(/\.$/, "");
-                        if (!domain) return null;
-                        // Skip IP addresses (both IPv4 and IPv6)
-                        if (
-                            /^[0-9.]+$/.test(domain) || // IPv4
-                            /^[a-fA-F0-9:]+$/.test(domain) // IPv6
-                        ) {
-                            return null;
-                        }
-                        const parts = domain.split(".");
-                        if (parts.length > 2) domain = parts.slice(-2).join(".");
-                        return domain.toLowerCase();
-                    })
-                    .filter((d): d is string => Boolean(d))
-            )
-        );
-    }, [denylist, allowlist]);
-
-    // Batch fetch logos only for domains not already fetched
-    const fetchLogos = useCallback(async () => {
-        const uniqueDomains = getUniqueDomains();
-        // Only request logos for domains not already fetched
-        const domainsToFetch = uniqueDomains.filter(domain => !logoRequestedRef.current.has(domain));
-        if (domainsToFetch.length === 0) return;
-
-        try {
-            const resp = await api.Client.auxiliaryApi.apiV1AuxiliaryLogosPost({
-                domains: domainsToFetch,
-            });
-            // Accept both { logos: { ... } } and flat { ... } responses
-            const logos = resp.data.logos ? resp.data.logos : resp.data;
-            setLogoMap(prev => ({ ...prev, ...logos }));
-            domainsToFetch.forEach(domain => logoRequestedRef.current.add(domain));
-        } catch {
-            // Do not clear logoMap on error, just skip
-        }
-    }, [getUniqueDomains]);
-
-    // Only fetch logos when rules change and only for new domains
-    useEffect(() => {
-        fetchLogos();
-    }, [fetchLogos, denylist, allowlist]);
-
-    const handleComposerSubmit = useCallback(async (action: "denylist" | "allowlist") => {
+    const handleComposerSubmit = useCallback(async (tab: RuleTab) => {
         if (!activeProfile?.profile_id) {
             toast.error("Select a profile before adding custom rules.");
             return;
         }
 
-        const originalTokens = composerTokens[action];
+        const originalTokens = composerTokens[tab];
         const staticTokens = originalTokens.filter(token => token.meta?.error);
         const submissionTokens = originalTokens.filter(token => !token.meta?.error);
 
@@ -123,7 +108,7 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
             const response = await api.Client.profilesApi.apiV1ProfilesIdCustomRulesBatchPost(
                 activeProfile.profile_id,
                 {
-                    action: action === "denylist" ? "block" : "allow",
+                    action: TAB_TO_ACTION[tab],
                     values: submissionTokens.map(token => token.value),
                 }
             );
@@ -134,8 +119,7 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
             if (created.length > 0) {
                 const updated = await api.Client.profilesApi.apiV1ProfilesIdGet(activeProfile.profile_id);
                 setActiveProfile(updated.data);
-                toast.success(`${created.length} entr${created.length === 1 ? "y" : "ies"} added to the ${action}.`);
-                fetchLogos();
+                toast.success(`${created.length} entr${created.length === 1 ? "y" : "ies"} added to the ${tab}.`);
             }
 
             if (skipped.length > 0) {
@@ -176,61 +160,46 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
                     }
                 });
 
-                updateComposerTokens(action, deduped);
+                updateComposerTokens(tab, deduped);
             } else {
-                updateComposerTokens(action, []);
+                updateComposerTokens(tab, []);
             }
-        } catch (e: any) {
-            const apiMsg =
-                e?.response?.data?.error ||
-                e?.response?.data?.message ||
-                e?.response?.data?.detail ||
-                e?.message ||
-                "Failed to add custom rules";
-            toast.error(apiMsg);
+        } catch (error: unknown) {
+            toast.error(formatApiError(error, "Failed to add custom rules"));
         } finally {
             setLoading(false);
         }
-    }, [activeProfile?.profile_id, composerTokens, fetchLogos, setActiveProfile, updateComposerTokens]);
+    }, [activeProfile?.profile_id, composerTokens, setActiveProfile, updateComposerTokens]);
 
     // Handler for deleting a custom rule
-    const handleDeleteRule = async (userRuleId: string | number) => {
+    const handleDeleteRule = useCallback(async (userRuleId: string) => {
         if (!activeProfile?.profile_id) return;
         setLoading(true);
         try {
             await api.Client.profilesApi.apiV1ProfilesIdCustomRulesCustomRuleIdDelete(
                 activeProfile.profile_id,
-                String(userRuleId)
+                userRuleId
             );
             // Fetch updated profile and update store
             const updated = await api.Client.profilesApi.apiV1ProfilesIdGet(activeProfile.profile_id);
             setActiveProfile(updated.data);
             toast.success("Custom rule deleted successfully.");
-            // Optionally, fetch logos again if needed
-            fetchLogos();
-        } catch (e: any) {
-            const apiMsg =
-                e?.response?.data?.error ||
-                e?.response?.data?.message ||
-                e?.response?.data?.detail ||
-                e?.message ||
-                "Failed to delete rule";
-            toast.error(apiMsg);
+        } catch (error: unknown) {
+            toast.error(formatApiError(error, "Failed to delete rule"));
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeProfile?.profile_id, setActiveProfile]);
 
     // Memoize handlers to prevent unnecessary re-renders
-    const handleEntryCheck = useCallback((id: string | number, checked: boolean) => {
+    const handleEntryCheck = useCallback((id: string, checked: boolean) => {
         setSelectedIds(prev => {
             if (checked) {
                 // Add only if not already present
                 return prev.includes(id) ? prev : [...prev, id];
-            } else {
-                // Remove from selection
-                return prev.filter(selId => selId !== id);
             }
+            // Remove from selection
+            return prev.filter(selId => selId !== id);
         });
     }, []);
 
@@ -243,7 +212,7 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
                 selectedIds.map(userRuleId =>
                     api.Client.profilesApi.apiV1ProfilesIdCustomRulesCustomRuleIdDelete(
                         activeProfile.profile_id,
-                        String(userRuleId)
+                        userRuleId
                     )
                 )
             );
@@ -252,19 +221,12 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
             setActiveProfile(updated.data);
             toast.success("Selected custom rules deleted successfully.");
             setSelectedIds([]);
-            fetchLogos();
-        } catch (e: any) {
-            const apiMsg =
-                e?.response?.data?.error ||
-                e?.response?.data?.message ||
-                e?.response?.data?.detail ||
-                e?.message ||
-                "Failed to delete selected rules";
-            toast.error(apiMsg);
+        } catch (error: unknown) {
+            toast.error(formatApiError(error, "Failed to delete selected rules"));
         } finally {
             setLoading(false);
         }
-    }, [activeProfile?.profile_id, selectedIds, setActiveProfile, fetchLogos]);
+    }, [activeProfile?.profile_id, selectedIds, setActiveProfile]);
 
     // Show header only if at least one is selected
     const allSelected = selectedIds.length > 0;
@@ -281,116 +243,7 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
             rule.value?.toLowerCase().includes(searchValue.toLowerCase())
         ), [allowlist, searchValue]);
 
-    // Memoize CustomRulesCard to prevent unnecessary re-renders
-    const CustomRulesCard = useCallback(({
-        rules,
-        selectedIds,
-        onCheck,
-        onDelete,
-        logoMap,
-        allSelected,
-        selectedCount,
-        handleBulkDelete,
-        loading,
-        type,
-        composer,
-    }: {
-        rules: any[];
-        selectedIds: Array<string | number>;
-        onCheck: (id: string | number, checked: boolean) => void;
-        onDelete: (id: string | number) => void;
-        logoMap: Record<string, string>;
-        allSelected: boolean;
-        selectedCount: number;
-        handleBulkDelete: () => void;
-        loading: boolean;
-        type: "denied" | "allowed";
-        composer: JSX.Element;
-    }) => {
-        const [removingIds, setRemovingIds] = useState<Array<string | number>>([]);
-
-        // Helper for fade-out before delete
-        const handleEntryDelete = useCallback((id: string | number) => {
-            setRemovingIds(prev => [...prev, id]);
-            setTimeout(() => {
-                onDelete(id);
-                setRemovingIds(prev => prev.filter(rid => rid !== id));
-            }, 300); // match transition duration
-        }, [onDelete]);
-
-        if (rules.length === 0) {
-            if (searchValue.trim().length > 0) {
-                return (
-                    <Card className="flex flex-1 h-full items-center justify-center border-[var(--tailwind-colors-slate-600)] rounded-md bg-background">
-                        <NoRulesExist
-                            type={type}
-                            title="No results found"
-                            message={`Try a different search term or clear your search to see all ${type === "denied" ? "denylist" : "allowlist"} domains.`}
-                        />
-                    </Card>
-                );
-            }
-
-            return (
-                <Card className="flex flex-col items-start relative flex-1 self-stretch w-full grow bg-[var(--variable-collection-surface)] rounded-lg overflow-hidden border-0">
-                    <div className="flex flex-col h-auto md:h-[652px] items-start gap-4 md:gap-8 p-4 relative self-stretch w-full">
-                        <div className="flex flex-col items-center justify-start md:justify-center gap-2.5 relative self-stretch w-full md:flex-1 md:grow">
-                            {/* Pull component higher on mobile (counteract internal mt) */}
-                            <div className="-mt-4 md:mt-0 w-full flex justify-center">
-                                <NoRulesExist
-                                    type={type}
-                                    showInput={true}
-                                    composer={composer}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-            );
-        }
-
-        return (
-            <div className="flex flex-col items-start gap-2 relative flex-1 self-stretch w-full grow rounded-md">
-                {allSelected && selectedCount > 0 && (
-                    <div className="flex justify-between py-2 px-4 w-full bg-[var(--tailwind-colors-slate-900)] border border-solid border-[var(--tailwind-colors-slate-600)] rounded-md items-center">
-                        <div className="inline-flex items-center gap-4">
-                            <div className="relative w-4 h-4 bg-[var(--tailwind-colors-rdns-600)] rounded-[var(--shadcn-ui-radius-radius-sm)] border-[var(--tailwind-colors-rdns-600)]">
-                                <MinusIcon className="absolute w-3.5 h-3.5 top-px left-px" />
-                            </div>
-                            <div className="font-text-sm-leading-5-normal text-[var(--tailwind-colors-slate-50)] text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)]">
-                                {selectedCount} selected
-                            </div>
-                            <button
-                                className="flex w-10 h-10 items-center justify-center rounded-[var(--primitives-radius-radius-md)] hover:bg-[var(--tailwind-colors-rdns-600)] group"
-                                onClick={handleBulkDelete}
-                                disabled={loading}
-                                title="Delete selected entries"
-                                aria-label="Delete selected entries"
-                            >
-                                <Trash2 className="w-4 h-4 text-[var(--tailwind-colors-rdns-600)] group-hover:text-[var(--tailwind-colors-slate-900)] transition-colors" />
-                            </button>
-                        </div>
-                    </div>
-                )}
-                {rules.map((rule) => {
-                    const checked = selectedIds.includes(rule.id);
-                    const isRemoving = removingIds.includes(rule.id);
-                    return (
-                        <CustomRuleEntry
-                            key={rule.id}
-                            rule={rule}
-                            checked={checked}
-                            onCheck={onCheck}
-                            onDelete={handleEntryDelete}
-                            logoMap={logoMap}
-                            isRemoving={isRemoving}
-                            hideDeleteButton={allSelected}
-                        />
-                    );
-                })}
-            </div>
-        );
-    }, [searchValue]);
+    // CustomRulesCard component moved below for clarity
 
     return (
         <div className="flex flex-col flex-1 w-full h-full min-h-screen md:min-h-0 items-start gap-6 p-6 pt-8 md:pt-8 md:p-8 overflow-visible">
@@ -531,13 +384,13 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
                                 rules={filteredDenylist}
                                 selectedIds={selectedIds}
                                 onCheck={handleEntryCheck}
-                                onDelete={handleDeleteRule}
-                                logoMap={logoMap}
+                                onDelete={(id: string) => { void handleDeleteRule(id); }}
                                 allSelected={allSelected}
                                 selectedCount={selectedCount}
                                 handleBulkDelete={handleBulkDelete}
                                 loading={loading}
                                 type="denied"
+                                searchQuery={searchValue}
                                 composer={
                                     <RuleComposer
                                         action="denylist"
@@ -555,13 +408,13 @@ export default function MainContentSection(_: Omit<MainContentSectionProps, "acc
                                 rules={filteredAllowlist}
                                 selectedIds={selectedIds}
                                 onCheck={handleEntryCheck}
-                                onDelete={handleDeleteRule}
-                                logoMap={logoMap}
+                                onDelete={(id: string) => { void handleDeleteRule(id); }}
                                 allSelected={allSelected}
                                 selectedCount={selectedCount}
                                 handleBulkDelete={handleBulkDelete}
                                 loading={loading}
                                 type="allowed"
+                                searchQuery={searchValue}
                                 composer={
                                     <RuleComposer
                                         action="allowlist"
