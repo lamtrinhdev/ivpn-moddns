@@ -1,41 +1,19 @@
 import { useState, type JSX } from "react";
 import { useScreenDetector } from "@/hooks/useScreenDetector";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
-import { Globe, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge"; // still used for Blocked status only
 import { Tooltip } from "@/components/ui/tooltip";
 import type { ModelQueryLog } from "@/api/client";
 
-interface LogIconProps {
-    logoUrl?: string;
-    domain: string;
-}
-
-function LogIcon({ logoUrl, domain }: LogIconProps) {
-    const [imgError, setImgError] = useState(false);
-
-    if (!logoUrl || imgError) {
-        return <Globe className="w-5 h-5 text-[var(--tailwind-colors-slate-100)]" />;
-    }
-    return (
-        <img
-            src={logoUrl}
-            alt={domain}
-            className="w-5 h-5 object-contain"
-            onError={() => setImgError(true)}
-        />
-    );
-}
-
 interface QueryLogCardProps {
     log: ModelQueryLog;
-    logoUrl?: string;
     isLast?: boolean;
     lastLogRef?: (node: HTMLDivElement | null) => void;
 }
 
-const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): JSX.Element | null => {
+const QueryLogCard = ({ log, isLast, lastLogRef }: QueryLogCardProps): JSX.Element | null => {
     // If domain logging is disabled, dns_request.domain may be absent. Provide a placeholder.
     const rawDomain = log.dns_request?.domain;
     let domain = rawDomain ? rawDomain.replace(/\.$/, "") : undefined;
@@ -61,7 +39,7 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
     else deviceIdOrIp = rawDeviceId.slice(0, 36);
 
     const DOMAIN_TRUNCATE_THRESHOLD = 65; // existing logic threshold
-    const MOBILE_EXPANDED_DOMAIN_LIMIT = 30;
+    const MOBILE_EXPANDED_DOMAIN_LIMIT = 50;
     const TIMESTAMP_COLLAPSED_MAX_HEIGHT = 24;
     const TIMESTAMP_EXPANDED_MAX_HEIGHT = 48;
     const isDomainTruncatable = rawDomain ? rawDomain.length > DOMAIN_TRUNCATE_THRESHOLD : false;
@@ -84,9 +62,6 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
                     <div className="flex flex-col gap-1 w-full">
                         <div className="flex items-start gap-2">
                             <div className="inline-flex items-center gap-2 relative min-w-0 flex-1">
-                                <div className="relative w-5 h-5 flex-shrink-0 hidden md:block">
-                                    <LogIcon logoUrl={logoUrl} domain={domain || 'unknown'} />
-                                </div>
                                 <div className="relative flex flex-col gap-1 min-w-0">
                                     <div className="hidden md:flex items-center gap-2 font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-white text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] truncate max-w-[200px] md:max-w-[480px] lg:max-w-[560px]">
                                         {rawDomain ? (
@@ -124,9 +99,6 @@ const QueryLogCard = ({ log, logoUrl, isLast, lastLogRef }: QueryLogCardProps): 
                                 </div>
                                 <div className={`flex gap-x-2 gap-y-2 min-w-0 flex-wrap transition-all duration-300 ease-out ${timestampExpanded ? 'items-start' : 'items-center'}`}>
                                     <div className="flex items-center gap-2 min-w-0 flex-1 order-1 transition-all duration-300 ease-out">
-                                        <div className="w-5 h-5 flex-shrink-0">
-                                            <LogIcon logoUrl={logoUrl} domain={domain || 'unknown'} />
-                                        </div>
                                         <div className="relative flex flex-1 items-center gap-2 font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-white text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] truncate max-w-full text-left min-w-0">
                                             {rawDomain ? (
                                                 timestampExpanded ? (
