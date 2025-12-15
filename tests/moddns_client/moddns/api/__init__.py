@@ -4,7 +4,6 @@
 from moddns.api.account_api import AccountApi
 from moddns.api.apple_mobileconfig_api import AppleMobileconfigApi
 from moddns.api.authentication_api import AuthenticationApi
-from moddns.api.auxiliary_api import AuxiliaryApi
 from moddns.api.blocklists_api import BlocklistsApi
 from moddns.api.profile_api import ProfileApi
 from moddns.api.query_logs_api import QueryLogsApi

@@ -18,7 +18,6 @@ import (
 	"github.com/ivpn/dns/api/model"
 	"github.com/ivpn/dns/api/service/account"
 	"github.com/ivpn/dns/api/service/apple"
-	"github.com/ivpn/dns/api/service/auxiliary"
 	"github.com/ivpn/dns/api/service/blocklist"
 	"github.com/ivpn/dns/api/service/profile"
 	querylogs "github.com/ivpn/dns/api/service/query_logs"
@@ -39,7 +38,6 @@ type Service struct {
 	AppleServicer
 	BlocklistServicer
 	SubscriptionServicer
-	AuxiliaryServicer
 	SessionServicer
 	PasskeyServicer
 }
@@ -53,7 +51,6 @@ func New(cfg config.Config, store db.Db, cache cache.Cache, idGen idgen.Generato
 	httpClient := webhookClient.New(*cfg.API)
 	accSrv := account.NewAccountService(*cfg.Service, store, profSrv, statsSrv, subSrv, store, cache, mailer, idGen, apiValidator.Validator, *httpClient)
 	appleSrv := apple.NewAppleService(&cfg, shortener)
-	auxSrv := auxiliary.NewService(cfg.API.BrandfetchClientID, cache)
 	return Service{
 		Cfg:                  cfg,
 		Store:                store,
@@ -63,7 +60,6 @@ func New(cfg config.Config, store db.Db, cache cache.Cache, idGen idgen.Generato
 		AppleServicer:        appleSrv,
 		BlocklistServicer:    blocklistSrv,
 		SubscriptionServicer: subSrv,
-		AuxiliaryServicer:    auxSrv,
 		Webauthn:             webauthn,
 		HTTP:                 *httpClient,
 	}
@@ -75,7 +71,6 @@ type Servicer interface {
 	ProfileServicer
 	AppleServicer
 	BlocklistServicer
-	AuxiliaryServicer
 	SubscriptionServicer
 	PasskeyServicer
 	CredentialServicer
@@ -176,10 +171,6 @@ type SubscriptionServicer interface {
 	UpdateSubscription(ctx context.Context, accountId string, updates []model.SubscriptionUpdate) (*model.Subscription, error)
 	CreateSubscription(ctx context.Context, accountId, subscriptionId, activeUntil string) error
 	AddSubscription(ctx context.Context, subscriptionId string, activeUntil string) error
-}
-
-type AuxiliaryServicer interface {
-	FetchBrandLogos(ctx context.Context, domains []string) auxiliary.BrandLogoResult
 }
 
 // DeleteAccount deletes account with all connected data including sessions

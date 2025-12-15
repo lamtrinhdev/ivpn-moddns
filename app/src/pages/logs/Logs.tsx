@@ -21,7 +21,6 @@ interface QueryLogsProps {
 
 const QueryLogs = ({ profiles }: QueryLogsProps): JSX.Element => {
     const [logs, setLogs] = useState<ModelQueryLog[]>([]);
-    const [logoMap, setLogoMap] = useState<Record<string, string>>({});
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -131,42 +130,6 @@ const QueryLogs = ({ profiles }: QueryLogsProps): JSX.Element => {
                 );
                 if (response.status === 200) {
                     const newLogs = response.data || [];
-
-                    // --- Batch logo fetching ---
-                    // 1. Collect unique root domains (only if domain logging enabled)
-                    const domainLoggingEnabled = activeProfile?.settings?.logs?.log_domains !== false;
-                    if (domainLoggingEnabled) {
-                        const domains = Array.from(
-                            new Set(
-                                newLogs.map(log => {
-                                    if (log.dns_request?.domain) {
-                                        let domain = log.dns_request.domain.replace(/\.$/, "");
-                                        const parts = domain.split(".");
-                                        if (parts.length > 2) domain = parts.slice(-2).join(".");
-                                        return domain;
-                                    }
-                                    return '';
-                                }).filter(Boolean)
-                            )
-                        );
-
-                        // 2. Fetch logos for these domains
-                        if (domains.length > 0) {
-                            try {
-                                const logosResp = await api.Client.auxiliaryApi.apiV1AuxiliaryLogosPost({ domains });
-                                // logos endpoint returns shape: { logos: { [domain]: dataUrl }, errors: { [domain]: reason } }
-                                if (logosResp.status === 200 && (logosResp.data as any)?.logos) {
-                                    const data = logosResp.data as { logos?: Record<string, string> };
-                                    if (data.logos) {
-                                        setLogoMap(prev => ({ ...prev, ...data.logos }));
-                                    }
-                                }
-                            } catch (e) {
-                                console.error('Logo fetch error:', e); // Debug log
-                            }
-                        }
-                    }
-                    // --- End batch logo fetching ---
 
                     // Set logs and update state
                     setLogs(prev => (page === 1 ? newLogs : [...prev, ...newLogs]));
@@ -327,22 +290,10 @@ const QueryLogs = ({ profiles }: QueryLogsProps): JSX.Element => {
                                             <div className={`flex flex-col gap-1.5 md:gap-2 py-1.5 md:py-2 min-h-full bg-[var(--shadcn-ui-app-background)] overflow-x-hidden ${fadeClass || 'opacity-100'}`}>
                                                 {logs.map((log, index) => {
                                                     const isLast = index === logs.length - 1;
-                                                    // Only attempt logo resolution if a domain exists
-                                                    let logoUrl: string | undefined;
-                                                    if (log.dns_request?.domain) {
-                                                        let domain = log.dns_request.domain.replace(/\.$/, "");
-                                                        const domainParts = domain.split(".");
-                                                        if (domainParts.length > 2) {
-                                                            domain = domainParts.slice(-2).join(".");
-                                                        }
-                                                        // logoMap already stores domain -> logoUrl directly
-                                                        logoUrl = logoMap[domain];
-                                                    }
                                                     return (
                                                         <QueryLogCard
                                                             key={`${log.profile_id}-${log.timestamp}-${index}`}
                                                             log={log}
-                                                            logoUrl={logoUrl}
                                                             isLast={isLast}
                                                             lastLogRef={isLast ? lastLogRef : undefined}
                                                         />

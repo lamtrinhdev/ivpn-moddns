@@ -17,7 +17,6 @@
 from moddns.models.api_blocklists_updates import ApiBlocklistsUpdates
 from moddns.models.api_create_profile_body import ApiCreateProfileBody
 from moddns.models.api_err_response import ApiErrResponse
-from moddns.models.api_logo_request import ApiLogoRequest
 from moddns.models.api_register_account_body import ApiRegisterAccountBody
 from moddns.models.api_verify_email_otp_body import ApiVerifyEmailOTPBody
 from moddns.models.api_web_authn_login_begin_request import ApiWebAuthnLoginBeginRequest

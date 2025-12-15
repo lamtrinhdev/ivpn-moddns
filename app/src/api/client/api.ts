@@ -71,19 +71,6 @@ export interface ApiErrResponse {
 /**
  * 
  * @export
- * @interface ApiLogoRequest
- */
-export interface ApiLogoRequest {
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof ApiLogoRequest
-     */
-    'domains': Array<string>;
-}
-/**
- * 
- * @export
  * @interface ApiRegisterAccountBody
  */
 export interface ApiRegisterAccountBody {
@@ -3480,116 +3467,6 @@ export class AuthenticationApi extends BaseAPI {
      */
     public apiV1WebauthnRegisterFinishPost(options?: RawAxiosRequestConfig) {
         return AuthenticationApiFp(this.configuration).apiV1WebauthnRegisterFinishPost(options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-
-/**
- * AuxiliaryApi - axios parameter creator
- * @export
- */
-export const AuxiliaryApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * Download brand logo(s) from Brandfetch. Accepts a list of domains and returns a JSON object mapping each domain to its logo as a base64-encoded data URL. Errors for each domain are also included.
-         * @summary Download brand logo(s) from Brandfetch
-         * @param {ApiLogoRequest} body Domains to fetch logos for
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        apiV1AuxiliaryLogosPost: async (body: ApiLogoRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'body' is not null or undefined
-            assertParamExists('apiV1AuxiliaryLogosPost', 'body', body)
-            const localVarPath = `/api/v1/auxiliary/logos`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-
-    
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(body, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * AuxiliaryApi - functional programming interface
- * @export
- */
-export const AuxiliaryApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = AuxiliaryApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * Download brand logo(s) from Brandfetch. Accepts a list of domains and returns a JSON object mapping each domain to its logo as a base64-encoded data URL. Errors for each domain are also included.
-         * @summary Download brand logo(s) from Brandfetch
-         * @param {ApiLogoRequest} body Domains to fetch logos for
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async apiV1AuxiliaryLogosPost(body: ApiLogoRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: any; }>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1AuxiliaryLogosPost(body, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AuxiliaryApi.apiV1AuxiliaryLogosPost']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * AuxiliaryApi - factory interface
- * @export
- */
-export const AuxiliaryApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = AuxiliaryApiFp(configuration)
-    return {
-        /**
-         * Download brand logo(s) from Brandfetch. Accepts a list of domains and returns a JSON object mapping each domain to its logo as a base64-encoded data URL. Errors for each domain are also included.
-         * @summary Download brand logo(s) from Brandfetch
-         * @param {ApiLogoRequest} body Domains to fetch logos for
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        apiV1AuxiliaryLogosPost(body: ApiLogoRequest, options?: RawAxiosRequestConfig): AxiosPromise<{ [key: string]: any; }> {
-            return localVarFp.apiV1AuxiliaryLogosPost(body, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * AuxiliaryApi - object-oriented interface
- * @export
- * @class AuxiliaryApi
- * @extends {BaseAPI}
- */
-export class AuxiliaryApi extends BaseAPI {
-    /**
-     * Download brand logo(s) from Brandfetch. Accepts a list of domains and returns a JSON object mapping each domain to its logo as a base64-encoded data URL. Errors for each domain are also included.
-     * @summary Download brand logo(s) from Brandfetch
-     * @param {ApiLogoRequest} body Domains to fetch logos for
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof AuxiliaryApi
-     */
-    public apiV1AuxiliaryLogosPost(body: ApiLogoRequest, options?: RawAxiosRequestConfig) {
-        return AuxiliaryApiFp(this.configuration).apiV1AuxiliaryLogosPost(body, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

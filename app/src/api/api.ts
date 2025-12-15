@@ -75,7 +75,6 @@ const Client = {
   verificationApi: new client.VerificationApi(config),
   appleMobileconfigApi: new client.AppleMobileconfigApi(config),
   sessionsApi: new client.SessionsApi(config),
-  auxiliaryApi: new client.AuxiliaryApi(config),
   subscriptionApi: new client.SubscriptionApi(config),
 };
 

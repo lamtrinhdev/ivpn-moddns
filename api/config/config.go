@@ -67,7 +67,6 @@ type APIConfig struct {
 	ApiAllowIP            string
 	SessionExpirationTime time.Duration
 	SessionLimit          int64
-	BrandfetchClientID    string
 	ProfileIDMinLength    int
 	PSK                   string
 	SignupWebhookURL      string
@@ -105,8 +104,6 @@ func New() (*Config, error) {
 		return nil, errors.New("SERVER_DNS_SERVER_ADDRESSES is not set")
 	}
 	dnsServerAddresses := strings.Split(envDnsServerAddresses, ",")
-
-	brandfetchClientID := os.Getenv("API_BRANDFETCH_CLIENT_ID")
 
 	otpExpStr := os.Getenv("OTP_EXPIRATION")
 	if otpExpStr == "" {
@@ -207,7 +204,6 @@ func New() (*Config, error) {
 			BasicAuthPassword:     os.Getenv("API_BASIC_AUTH_PASSWORD"),
 			ApiAllowOrigin:        os.Getenv("API_ALLOW_ORIGIN"),
 			ApiAllowIP:            os.Getenv("API_ALLOW_IP"),
-			BrandfetchClientID:    brandfetchClientID,
 			SessionExpirationTime: sessionExp,
 			SessionLimit:          sessionLimitInt,
 			ProfileIDMinLength:    profileIDMinLen,
