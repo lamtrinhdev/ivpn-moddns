@@ -5,7 +5,6 @@ import LoginCard from "@/pages/auth/LoginCard";
 import AuthFooter from "@/components/auth/AuthFooter";
 import { Alert } from "@/components/ui/alert";
 import { Info } from "lucide-react";
-// 'toast' no longer needed directly; using authToasts wrapper
 import { authToasts } from "@/lib/authToasts";
 import { AuthContext } from "@/App";
 import { authenticateWithPasskey, isWebAuthnSupported } from "@/lib/webauthn";
@@ -24,8 +23,6 @@ export default function Login() {
     const [_error, setError] = useState<string | null>(null); // error text managed for potential UI usage, underscore to silence lint if unused
     const [loading, setLoading] = useState(false);
     const [webAuthnSupported] = useState(() => isWebAuthnSupported());
-    const [authValidated, setAuthValidated] = useState(false);
-    const [isLoggingIn, setIsLoggingIn] = useState(false);
 
     // 2FA state
     const [showOtp, setShowOtp] = useState(false);
@@ -35,15 +32,6 @@ export default function Login() {
     // Session limit dialog state
     const [showSessionLimitDialog, setShowSessionLimitDialog] = useState(false);
     const [sessionLimitLoading, setSessionLimitLoading] = useState(false);
-
-    // Simple redirect for already authenticated users
-    useEffect(() => {
-        if (auth?.isAuthenticated && !isLoggingIn) {
-            navigate("/home", { replace: true });
-        } else {
-            setAuthValidated(true);
-        }
-    }, [auth?.isAuthenticated, navigate, location.state, isLoggingIn]);
 
     useEffect(() => {
         if (location.state?.passwordResetSuccess) {
@@ -143,7 +131,6 @@ export default function Login() {
     // Handles login with or without OTP
     const handleLogin = async (email: string, password: string, otp?: string) => {
         setLoading(true);
-        setIsLoggingIn(true);
         setError(null);
 
         const data = { email, password };
@@ -209,7 +196,6 @@ export default function Login() {
             }
         } finally {
             setLoading(false);
-            setIsLoggingIn(false);
         }
     };
 
@@ -221,7 +207,6 @@ export default function Login() {
     // Handler for passkey authentication
     const handlePasskeyLogin = async (email: string) => {
         setLoading(true);
-        setIsLoggingIn(true);
         setError(null);
 
         try {
@@ -247,7 +232,6 @@ export default function Login() {
             authToasts.passkeyError(errorMessage);
         } finally {
             setLoading(false);
-            setIsLoggingIn(false);
         }
     };
 
@@ -256,49 +240,40 @@ export default function Login() {
             {/* Main content area - centered vertically and horizontally */}
             <div className="flex-1 flex items-center justify-center safe-px py-8">
                 <div className="flex flex-col auth-shell items-end gap-4 px-4 sm:px-0">
-                    {authValidated ? (
-                        <>
-                            <LoginCard
-                                onLogin={showOtp
-                                    ? async (_email, _password, otp) => handleOtpLogin(otp || "")
-                                    : async (email, password) => handleLogin(email, password)
-                                }
-                                onPasskeyLogin={handlePasskeyLogin}
-                                loading={loading}
-                                showOtp={showOtp}
-                                initialPasskeyMode={webAuthnSupported}
-                            />
+                    <LoginCard
+                        onLogin={showOtp
+                            ? async (_email, _password, otp) => handleOtpLogin(otp || "")
+                            : async (email, password) => handleLogin(email, password)
+                        }
+                        onPasskeyLogin={handlePasskeyLogin}
+                        loading={loading}
+                        showOtp={showOtp}
+                        initialPasskeyMode={webAuthnSupported}
+                    />
 
-                            {/* Info alert */}
-                            <Alert className="bg-[var(--tailwind-colors-sky-950)] border-none">
-                                <Info className="h-[18px] w-[18px] text-[var(--tailwind-colors-slate-50)]" />
-                                <div className="flex flex-col gap-3">
-                                    <h4 className="text-sm leading-4 font-medium text-[var(--tailwind-colors-slate-50)]">
-                                        {infoAlertData.title}
-                                    </h4>
-                                    <div className="text-xs leading-4 text-[var(--tailwind-colors-slate-100)]">
-                                        Sign up
-                                        {" "}or log in on{" "}
-                                        <a
-                                            href={infoAlertData.linkUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline p-0 m-0 h-auto align-baseline !underline !text-[var(--tailwind-colors-slate-50)] !hover:text-[var(--tailwind-colors-slate-200)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tailwind-colors-rdns-600)]"
-                                            aria-label={`Open ${infoAlertData.linkText} in a new tab`}
-                                        >
-                                            {infoAlertData.linkText}
-                                        </a>{" "}
-                                        and look for "modDNS Beta" in your account settings.
-                                    </div>
-                                </div>
-                            </Alert>
-                        </>
-                    ) : (
-                        // Show loading state while validating authentication
-                        <div data-testid="loading-screen" className="flex items-center justify-center w-full h-[400px]">
-                            <div className="text-[var(--tailwind-colors-slate-400)]">Loading...</div>
+                    {/* Info alert */}
+                    <Alert className="bg-[var(--tailwind-colors-sky-950)] border-none">
+                        <Info className="h-[18px] w-[18px] text-[var(--tailwind-colors-slate-50)]" />
+                        <div className="flex flex-col gap-3">
+                            <h4 className="text-sm leading-4 font-medium text-[var(--tailwind-colors-slate-50)]">
+                                {infoAlertData.title}
+                            </h4>
+                            <div className="text-xs leading-4 text-[var(--tailwind-colors-slate-100)]">
+                                Sign up
+                                {" "}or log in on{" "}
+                                <a
+                                    href={infoAlertData.linkUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline p-0 m-0 h-auto align-baseline !underline !text-[var(--tailwind-colors-slate-50)] !hover:text-[var(--tailwind-colors-slate-200)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tailwind-colors-rdns-600)]"
+                                    aria-label={`Open ${infoAlertData.linkText} in a new tab`}
+                                >
+                                    {infoAlertData.linkText}
+                                </a>{" "}
+                                and look for "modDNS Beta" in your account settings.
+                            </div>
                         </div>
-                    )}
+                    </Alert>
                 </div>
             </div>
 
@@ -318,6 +293,6 @@ export default function Login() {
                 onConfirm={handleRemoveAllSessions}
                 loading={sessionLimitLoading}
             />
-        </div>
+        </div >
     );
 }
