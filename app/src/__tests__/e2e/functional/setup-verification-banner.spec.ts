@@ -21,8 +21,9 @@ test.describe('Setup verification banner', () => {
       const verified = { ...unverified, email_verified: true };
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(verified) });
     });
-    // Trigger refresh by revisiting setup (store should rehydrate with verified account)
-    await page.goto('/setup');
+    // Trigger refresh by reloading setup (store should rehydrate with verified account)
+    await page.waitForTimeout(100);
+    await page.reload();
     await expect(page.getByTestId('verification-banner')).toHaveCount(0); // banner no longer rendered
   });
 });

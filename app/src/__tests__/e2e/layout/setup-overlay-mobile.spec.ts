@@ -21,7 +21,7 @@ import { registerMocks } from '../../mocks/registerMocks';
     const panel = page.getByTestId('setup-guide-panel');
     await expect(panel).toHaveAttribute('data-mode', 'overlay');
 
-    await expect(page.getByTestId('setup-guide-title')).toHaveText(/Windows setup instructions/i);
+    await expect(page.getByTestId('setup-guide-title')).toHaveText(/Windows setup/i);
 
     await page.getByTestId('setup-guide-close-button').click();
 

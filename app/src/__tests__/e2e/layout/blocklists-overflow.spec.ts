@@ -87,7 +87,7 @@ for (const vp of VIEWPORTS) {
       }
 
       const updatedTextAny = await firstCard.locator('text=/^Updated /').first().innerText();
-      expect(updatedTextAny).toMatch(/^Updated /);
+      expect(updatedTextAny).toMatch(/^Updated (?:~)?/);
     });
   });
 }
