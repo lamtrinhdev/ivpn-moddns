@@ -430,6 +430,14 @@ function ProtectedLayout() {
   );
 }
 
+function RootIndexRedirect() {
+  const { isAuthenticated } = useAuth();
+  const localAuthed = typeof window !== 'undefined' ? localStorage.getItem(AUTH_KEY) === 'true' : isAuthenticated;
+  const target = isAuthenticated && localAuthed ? '/home' : '/login';
+
+  return <Navigate to={target} replace />;
+}
+
 
 function SetupWithLoader() {
   const { account, profiles } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
@@ -451,8 +459,8 @@ function CustomRulesWithLoader() {
 }
 
 function AccountPreferencesWithLoader() {
-  const { account, profiles } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
-  return <AccountPreferences account={account} profiles={profiles} />;
+  const { account } = useLoaderData() as { account: ModelAccount | null };
+  return <AccountPreferences account={account} />;
 }
 
 function MobileconfigWithLoader() {
@@ -511,6 +519,7 @@ const router = createBrowserRouter([
     element: <AppWithEventHandler />,
     errorElement: <RouterErrorBoundary />,
     children: [
+      { index: true, element: <RootIndexRedirect /> },
       // PUBLIC ROUTES (grouped under one persistent layout to reduce white flicker between transitions)
       {
         path: "",
@@ -569,4 +578,4 @@ function App() {
 
 
 export default App;
-export { useAuth, AuthContext };
+export { useAuth, AuthContext, RootIndexRedirect };
