@@ -46,6 +46,15 @@ const STATUS_FILTERS = [
 interface MainContentSectionProps {
 }
 
+export const formatUpdatedRelative = (isoDate?: string): string => {
+    if (!isoDate) return "";
+    const raw = formatDistanceToNow(parseISO(isoDate), { addSuffix: true });
+    if (raw.startsWith("about ")) {
+        return `~${raw.slice(6)}`;
+    }
+    return raw;
+};
+
 export default function MainContentSection({ }: MainContentSectionProps): JSX.Element {
     const [showAlert, setShowAlert] = useState(true);
     const [blocklists, setBlocklists] = useState<any[]>([]);
@@ -365,11 +374,7 @@ export default function MainContentSection({ }: MainContentSectionProps): JSX.El
                                         title={blocklist.name}
                                         description={blocklist.description}
                                         entries={blocklist.entries}
-                                        updated={
-                                            blocklist.last_modified
-                                                ? formatDistanceToNow(parseISO(blocklist.last_modified), { addSuffix: true })
-                                                : ""
-                                        }
+                                        updated={formatUpdatedRelative(blocklist.last_modified)}
                                         onSwitchChange={(checked) => handleBlocklistSwitch(blocklistId, checked)}
                                         switchChecked={isEnabled}
                                         switchDisabled={updating === blocklistId}

@@ -280,7 +280,7 @@ export default function DeleteAccountDialog({
             <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[500px] border-[var(--tailwind-colors-slate-600)] p-0 transition-opacity duration-200 [&_[data-slot=dialog-close]_svg]:text-[var(--tailwind-colors-rdns-600)]">
                 <DialogHeader className="p-6 space-y-1.5">
                     <DialogTitle className="text-lg font-semibold text-[var(--tailwind-colors-slate-50)] tracking-[-0.45px] leading-[18px] font-['Roboto_Flex-SemiBold',Helvetica] mt-[-1px]">
-                        Ready to delete your account?
+                        Confirm account deletion
                     </DialogTitle>
                     <DialogDescription className="text-sm font-normal text-[var(--tailwind-colors-slate-400)] font-['Roboto_Flex-Regular',Helvetica] leading-5">
                         This will permanently delete your account and all associated data. This action cannot be undone.

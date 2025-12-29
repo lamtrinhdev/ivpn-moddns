@@ -12,14 +12,11 @@ interface NoRulesExistProps {
 export default function NoRulesExist({
     type,
     title,
-    message,
+    message = "",
     showInput = false,
     composer,
 }: NoRulesExistProps): JSX.Element {
     const defaultTitle = type === "denied" ? "There are no denied domains yet" : "There are no allowed domains yet";
-    const defaultMessage = type === "denied"
-        ? "This area will light up with items once you start adding items. Start by adding you first denied domain"
-        : "This area will light up with items once you start adding items. Start by adding you first allowed domain";
 
     return (
         // On mobile we want this block higher (no scroll). Remove vertical centering on mobile, keep it on md+.
@@ -39,7 +36,7 @@ export default function NoRulesExist({
                         </div>
 
                         <div className="relative w-full max-w-sm [font-family:'Roboto_Flex-Regular',Helvetica] font-normal text-[var(--tailwind-colors-slate-100)] text-sm text-center tracking-[0] leading-5">
-                            {message ?? defaultMessage}
+                            {message}
                         </div>
                     </div>
                 </div>

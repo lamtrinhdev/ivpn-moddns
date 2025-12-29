@@ -48,7 +48,7 @@ export default function ProfileManagementSection({ profiles }: ProfileManagement
         {
             title: "Query logs",
             description:
-                "Logs are disabled by default to protect your privacy. Retention period and further settings are available when enabled.",
+                "Logs are disabled by default to protect your privacy.",
             options: [
                 { value: "disable", label: "Disable", icon: "octagon-x" as const },
                 { value: "enable", label: "Enable", icon: "check" as const },
