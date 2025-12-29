@@ -459,7 +459,7 @@ function CustomRulesWithLoader() {
 }
 
 function AccountPreferencesWithLoader() {
-  const { account } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
+  const { account } = useLoaderData() as { account: ModelAccount | null };
   return <AccountPreferences account={account} />;
 }
 
