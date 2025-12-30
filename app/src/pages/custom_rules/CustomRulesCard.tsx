@@ -15,7 +15,6 @@ export interface CustomRulesCardProps {
     handleBulkDelete: () => void | Promise<void>;
     loading: boolean;
     type: "denied" | "allowed";
-    composer: JSX.Element;
     searchQuery: string;
 }
 
@@ -29,7 +28,6 @@ export default function CustomRulesCard({
     handleBulkDelete,
     loading,
     type,
-    composer,
     searchQuery,
 }: CustomRulesCardProps): JSX.Element {
     const [removingIds, setRemovingIds] = useState<string[]>([]);
@@ -56,17 +54,12 @@ export default function CustomRulesCard({
         }
 
         return (
-            <Card className="flex flex-col items-start relative flex-1 self-stretch w-full grow bg-[var(--variable-collection-surface)] rounded-lg overflow-hidden border-0">
-                <div className="flex flex-col h-auto md:h-[652px] items-start gap-4 md:gap-8 p-4 relative self-stretch w-full">
-                    <div className="flex flex-col items-center justify-start md:justify-center gap-2.5 relative self-stretch w-full md:flex-1 md:grow">
-                        <div className="-mt-4 md:mt-0 w-full flex justify-center">
-                            <NoRulesExist
-                                type={type}
-                                showInput={true}
-                                composer={composer}
-                            />
-                        </div>
-                    </div>
+            <Card className="flex flex-col flex-1 self-stretch w-full grow bg-[var(--variable-collection-surface)] rounded-lg border border-[var(--tailwind-colors-slate-700)]">
+                <div className="flex flex-col items-center gap-6 p-6 w-full text-center">
+                    <NoRulesExist
+                        type={type}
+                        title={type === "allowed" ? "There are no allowed domains yet." : undefined}
+                    />
                 </div>
             </Card>
         );

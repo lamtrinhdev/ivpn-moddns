@@ -83,11 +83,20 @@ export default function MainContentSection({ profiles = [] }: Omit<MainContentSe
     const customRules: ModelCustomRule[] = activeProfile?.settings?.custom_rules ?? [];
     const denylist = customRules.filter(rule => rule.action === "block");
     const allowlist = customRules.filter(rule => rule.action === "allow");
+    const denylistHasRules = denylist.length > 0;
+    const allowlistHasRules = allowlist.length > 0;
+    const activeTabHasRules = activeTab === "denylist" ? denylistHasRules : allowlistHasRules;
 
     useEffect(() => {
         setComposerTokens({ denylist: [], allowlist: [] });
         setSelectedIds([]);
     }, [activeProfile?.profile_id]);
+
+    useEffect(() => {
+        if (!activeTabHasRules) {
+            setShowSearch(false);
+        }
+    }, [activeTabHasRules]);
 
     const handleComposerSubmit = useCallback(async (tab: RuleTab) => {
         if (!activeProfile?.profile_id) {
@@ -321,61 +330,57 @@ export default function MainContentSection({ profiles = [] }: Omit<MainContentSe
                         </section>
 
                         <div className="flex flex-col gap-3 w-full">
-                            {/* Only show input controls when there are existing rules */}
-                            {((activeTab === "denylist" && denylist.length > 0) || (activeTab === "allowlist" && allowlist.length > 0)) && (
-                                <>
-                                    <div className="flex flex-row flex-wrap md:flex-row items-stretch md:items-start gap-3 w-full min-w-0">
-                                        <div className="flex flex-row flex-1 items-stretch md:items-start gap-3 min-w-0">
-                                            <RuleComposer
-                                                action={activeTab}
-                                                tokens={composerTokens[activeTab]}
-                                                onTokensChange={(next) => updateComposerTokens(activeTab, next)}
-                                                onSubmit={() => handleComposerSubmit(activeTab)}
-                                                loading={loading || !activeProfile?.profile_id}
-                                                className="flex-1 min-w-0"
-                                            />
-                                            <Button
-                                                className={`w-11 h-11 md:w-auto md:h-9 rounded-md flex items-center justify-center md:px-4 md:gap-2 ${showSearch
-                                                    ? "bg-[var(--tailwind-colors-slate-800)] text-[var(--tailwind-colors-slate-400)]"
-                                                    : "bg-[var(--tailwind-colors-rdns-600)] text-background"}`}
-                                                onClick={() => setShowSearch((prev) => !prev)}
-                                                aria-label={showSearch ? 'Close search' : 'Open search'}
-                                            >
-                                                <Search className="w-4 h-4" />
-                                                <span className="hidden md:inline text-sm font-medium">
-                                                    {showSearch ? 'Close search' : 'Search'}
-                                                </span>
-                                            </Button>
-                                        </div>
-                                    </div>
+                            <div className="flex flex-row flex-wrap md:flex-row items-stretch md:items-start gap-3 w-full min-w-0">
+                                <div className="flex flex-row flex-1 items-stretch md:items-start gap-3 min-w-0">
+                                    <RuleComposer
+                                        action={activeTab}
+                                        tokens={composerTokens[activeTab]}
+                                        onTokensChange={(next) => updateComposerTokens(activeTab, next)}
+                                        onSubmit={() => handleComposerSubmit(activeTab)}
+                                        loading={loading || !activeProfile?.profile_id}
+                                        className="flex-1 min-w-0"
+                                    />
+                                    <Button
+                                        className={`w-11 h-11 md:w-auto md:h-9 rounded-md flex items-center justify-center md:px-4 md:gap-2 ${showSearch
+                                            ? "bg-[var(--tailwind-colors-slate-800)] text-[var(--tailwind-colors-slate-400)]"
+                                            : "bg-[var(--tailwind-colors-rdns-600)] text-background"}`}
+                                        onClick={() => setShowSearch((prev) => !prev)}
+                                        aria-label={showSearch ? 'Close search' : 'Open search'}
+                                        disabled={!activeTabHasRules}
+                                    >
+                                        <Search className="w-4 h-4" />
+                                        <span className="hidden md:inline text-sm font-medium">
+                                            {showSearch ? 'Close search' : 'Search'}
+                                        </span>
+                                    </Button>
+                                </div>
+                            </div>
 
-                                    {/* Show Search.tsx here if toggled */}
-                                    {showSearch && (
-                                        <div className="w-full bg-background">
-                                            <CustomRulesSearch
-                                                value={searchValue}
-                                                onChange={setSearchValue}
-                                                allSelected={
-                                                    (activeTab === "denylist"
-                                                        ? filteredDenylist
-                                                        : filteredAllowlist
-                                                    ).length > 0 &&
-                                                    (activeTab === "denylist"
-                                                        ? filteredDenylist
-                                                        : filteredAllowlist
-                                                    ).every(r => selectedIds.includes(r.id))
-                                                }
-                                                onSelectAll={() => {
-                                                    const visibleIds = (activeTab === "denylist" ? filteredDenylist : filteredAllowlist).map(r => r.id);
-                                                    setSelectedIds(visibleIds);
-                                                }}
-                                                onDeselectAll={() => {
-                                                    setSelectedIds([]);
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                </>
+                            {/* Show Search.tsx here if toggled */}
+                            {showSearch && (
+                                <div className="w-full bg-background">
+                                    <CustomRulesSearch
+                                        value={searchValue}
+                                        onChange={setSearchValue}
+                                        allSelected={
+                                            (activeTab === "denylist"
+                                                ? filteredDenylist
+                                                : filteredAllowlist
+                                            ).length > 0 &&
+                                            (activeTab === "denylist"
+                                                ? filteredDenylist
+                                                : filteredAllowlist
+                                            ).every(r => selectedIds.includes(r.id))
+                                        }
+                                        onSelectAll={() => {
+                                            const visibleIds = (activeTab === "denylist" ? filteredDenylist : filteredAllowlist).map(r => r.id);
+                                            setSelectedIds(visibleIds);
+                                        }}
+                                        onDeselectAll={() => {
+                                            setSelectedIds([]);
+                                        }}
+                                    />
+                                </div>
                             )}
                         </div>
 
@@ -391,16 +396,6 @@ export default function MainContentSection({ profiles = [] }: Omit<MainContentSe
                                 loading={loading}
                                 type="denied"
                                 searchQuery={searchValue}
-                                composer={
-                                    <RuleComposer
-                                        action="denylist"
-                                        tokens={composerTokens.denylist}
-                                        onTokensChange={(next) => updateComposerTokens("denylist", next)}
-                                        onSubmit={() => handleComposerSubmit("denylist")}
-                                        loading={loading || !activeProfile?.profile_id}
-                                        className="w-full"
-                                    />
-                                }
                             />
                         </TabsContent>
                         <TabsContent value="allowlist" className="flex flex-col gap-4 mt-2 flex-1">
@@ -415,16 +410,6 @@ export default function MainContentSection({ profiles = [] }: Omit<MainContentSe
                                 loading={loading}
                                 type="allowed"
                                 searchQuery={searchValue}
-                                composer={
-                                    <RuleComposer
-                                        action="allowlist"
-                                        tokens={composerTokens.allowlist}
-                                        onTokensChange={(next) => updateComposerTokens("allowlist", next)}
-                                        onSubmit={() => handleComposerSubmit("allowlist")}
-                                        loading={loading || !activeProfile?.profile_id}
-                                        className="w-full"
-                                    />
-                                }
                             />
                         </TabsContent>
                     </Tabs>
