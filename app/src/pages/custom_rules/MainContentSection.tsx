@@ -93,10 +93,10 @@ export default function MainContentSection({ profiles = [] }: Omit<MainContentSe
     }, [activeProfile?.profile_id]);
 
     useEffect(() => {
-        if (!activeTabHasRules && showSearch) {
+        if (!activeTabHasRules) {
             setShowSearch(false);
         }
-    }, [activeTabHasRules, showSearch]);
+    }, [activeTabHasRules]);
 
     const handleComposerSubmit = useCallback(async (tab: RuleTab) => {
         if (!activeProfile?.profile_id) {
