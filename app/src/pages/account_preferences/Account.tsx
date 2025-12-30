@@ -253,7 +253,7 @@ const PreferencesSection = ({ account }: PreferencesSectionProps): JSX.Element =
                 {
                     name: "Error reports",
                     description:
-                        "By default no reports are sent to our servers. Enabling error report sharing can help us improve modDNS better.",
+                        "No reports are sent to our servers by default. Enabling error reports sharing helps us improve modDNS.",
                     hasToggle: true,
                     toggleOptions: [
                         { value: "disable", label: "Disable", icon: "octagon-x" },

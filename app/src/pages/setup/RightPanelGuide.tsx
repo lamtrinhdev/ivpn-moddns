@@ -195,7 +195,7 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
                         )}
                         {icon}
                         <div data-testid="setup-guide-title" className="text-sm sm:text-lg text-[var(--tailwind-colors-slate-50)] leading-6 font-['Roboto_Flex-Regular',Helvetica] truncate">
-                            {platform} setup instructions
+                            {platform} setup
                         </div>
                     </div>
                     {!isOverlay && (

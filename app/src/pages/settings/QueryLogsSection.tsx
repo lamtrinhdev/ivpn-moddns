@@ -66,7 +66,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
                         <div className="flex flex-col items-start gap-2 min-w-0 max-w-full">
                             <div className="[font-family:'Roboto_Flex-Medium',Helvetica] font-bold text-[var(--tailwind-colors-slate-50)] text-base tracking-[0] leading-4 break-words">Query logs</div>
                             <div className="font-text-sm-leading-5-normal font-[number:var(--text-sm-leading-5-normal-font-weight)] text-[var(--tailwind-colors-slate-200)] text-[length:var(--text-sm-leading-5-normal-font-size)] tracking-[var(--text-sm-leading-5-normal-letter-spacing)] leading-[var(--text-sm-leading-5-normal-line-height)] [font-style:var(--text-sm-leading-5-normal-font-style)] break-words">
-                                Logs are disabled by default to protect your privacy. Retention period and further settings are available when enabled.
+                                Logs are disabled by default to protect your privacy.
                             </div>
                         </div>
                         <ToggleGroup

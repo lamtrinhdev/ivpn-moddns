@@ -21,6 +21,6 @@ import { registerMocks } from '../../mocks/registerMocks';
     expect(width).toBeGreaterThan(550);
     expect(width).toBeLessThan(640);
 
-    await expect(page.getByTestId('setup-guide-title')).toHaveText(/Windows setup instructions/i);
+    await expect(page.getByTestId('setup-guide-title')).toHaveText(/Windows setup/i);
   });
 });
