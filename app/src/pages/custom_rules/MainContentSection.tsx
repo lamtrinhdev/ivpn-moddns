@@ -357,7 +357,7 @@ export default function MainContentSection({ profiles = [] }: Omit<MainContentSe
                             </div>
 
                             {/* Show Search.tsx here if toggled */}
-                            {showSearch && activeTabHasRules && (
+                            {showSearch && (
                                 <div className="w-full bg-background">
                                     <CustomRulesSearch
                                         value={searchValue}
