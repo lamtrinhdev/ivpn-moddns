@@ -47,12 +47,7 @@ const QuickRuleSheet = ({ open, onOpenChange, domain }: QuickRuleSheetProps) => 
 
     const activeProfile = useAppStore((state) => state.activeProfile);
     const setActiveProfile = useAppStore((state) => state.setActiveProfile);
-    const profileDisplayName =
-        activeProfile?.name ??
-        (activeProfile as { label?: string } | null)?.label ??
-        activeProfile?.profile_id ??
-        activeProfile?.id ??
-        "this profile";
+    const profileDisplayName = activeProfile?.name ?? "current profile";
 
     useEffect(() => {
         if (!open) {
