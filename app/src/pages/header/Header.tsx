@@ -1,4 +1,4 @@
-import { PanelLeftClose, PanelLeftOpen, Settings2, LogOutIcon, Menu } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Settings2, LogOutIcon, Menu, Activity } from "lucide-react";
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigationCollapse } from "@/context/NavigationCollapseContext";
 import { useScreenDetector } from "@/hooks/useScreenDetector";
@@ -20,6 +20,8 @@ interface HeaderProps {
     showProfileDropdown?: boolean;
     showLogoutButton?: boolean;
     currentPageName?: string;
+    showConnectionStatusRestoreButton?: boolean;
+    onRestoreConnectionStatus?: () => void;
 }
 
 export default function Header({
@@ -28,6 +30,8 @@ export default function Header({
     showProfileDropdown = true,
     showLogoutButton = false,
     currentPageName,
+    showConnectionStatusRestoreButton = false,
+    onRestoreConnectionStatus,
 }: HeaderProps): React.JSX.Element {
     const { collapsed, toggleCollapse } = useNavigationCollapse();
     const { navDesktop } = useScreenDetector();
@@ -93,6 +97,18 @@ export default function Header({
 
                 {/* Right: Profile dropdown/Logout button and Settings button */}
                 <div className="ml-auto flex items-center gap-3 w-auto">
+                    {showConnectionStatusRestoreButton && (
+                        <Button
+                            variant="secondary"
+                            className="flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--tailwind-colors-slate-700)] bg-[var(--shadcn-ui-app-background)] text-[var(--tailwind-colors-slate-50)] hover:bg-[var(--tailwind-colors-slate-900)]/60"
+                            onClick={() => onRestoreConnectionStatus?.()}
+                            data-testid="conn-header-show"
+                            aria-label="Show DNS connection status"
+                        >
+                            <Activity className="w-3.5 h-3.5 text-[var(--tailwind-colors-rdns-600)]" />
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.08em]">Show DNS status</span>
+                        </Button>
+                    )}
                     {showLogoutButton ? (
                         <Button
                             className="flex items-center gap-1 h-auto bg-[var(--tailwind-colors-slate-800)] hover:bg-[var(--tailwind-colors-rdns-600)] text-[var(--tailwind-colors-rdns-600)] hover:text-[var(--tailwind-colors-slate-800)]"

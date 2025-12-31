@@ -59,7 +59,11 @@ export const useAppStore = create<AppState>()(
     {
       name: "moddns-storage",
       // Persist only necessary lightweight UI state
-      partialize: (state) => ({ activeProfile: state.activeProfile, verificationBannerDismissed: state.verificationBannerDismissed }),
+      partialize: (state) => ({
+        activeProfile: state.activeProfile,
+        verificationBannerDismissed: state.verificationBannerDismissed,
+        connectionStatusVisible: state.connectionStatusVisible,
+      }),
     }
   )
 );

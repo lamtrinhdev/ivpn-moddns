@@ -276,6 +276,7 @@ function ProtectedLayout() {
   const rightPanelOpen = useAppStore((state) => state.rightPanelOpen);
   const setRightPanelOpen = useAppStore((state) => state.setRightPanelOpen);
   const connectionStatusVisible = useAppStore((state) => state.connectionStatusVisible);
+  const setConnectionStatusVisible = useAppStore((state) => state.setConnectionStatusVisible);
   const { profiles } = useAppStore();
   const location = useLocation();
   // IMPORTANT: call responsive detector BEFORE any conditional early return to maintain stable hook order
@@ -366,6 +367,7 @@ function ProtectedLayout() {
   const headerRightOffset = rightPanelOpen ? rightPanelWidth : 0;
   // Only reserve vertical space for connection status on desktop where it's rendered
   const headerTopOffset = (isDesktop && connectionStatusVisible) ? 48 : 0;
+  const shouldShowConnectionStatusRestore = isDesktop && !connectionStatusVisible;
   // content top spacing now handled dynamically via --app-header-stack variable
 
   return (
@@ -402,6 +404,8 @@ function ProtectedLayout() {
           showLogoutButton={showLogoutButton}
           showDialogTrigger={showDialogTrigger}
           currentPageName={currentPageName}
+          showConnectionStatusRestoreButton={shouldShowConnectionStatusRestore}
+          onRestoreConnectionStatus={() => setConnectionStatusVisible(true)}
         />
       </div>
       {/* Content area: responsive layout for mobile and desktop */}
