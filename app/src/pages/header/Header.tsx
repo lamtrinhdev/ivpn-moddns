@@ -204,7 +204,7 @@ export default function Header({
             {mobileNavOpen && !navDesktop && (
                 <div className="fixed inset-0 z-[100]" data-testid="nav-overlay-wrapper">
                     {/* Backdrop */}
-                    <div data-testid="nav-backdrop" className="fixed inset-0 bg-black/50" onClick={() => setMobileNavOpen(false)} />
+                    <div data-testid="nav-backdrop" className="fixed inset-0 bg-black/50 cursor-pointer" onClick={() => setMobileNavOpen(false)} />
 
                     {/* Navigation Panel */}
                     <div className="fixed inset-y-0 left-0 w-[80%] max-w-[320px] bg-[var(--variable-collection-surface)] shadow-lg" data-testid="nav-overlay-panel">

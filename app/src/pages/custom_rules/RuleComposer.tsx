@@ -63,6 +63,7 @@ const selectStyles: StylesConfig<RuleOption, true, RuleOptionGroup> = {
         height: "2.75rem",
         paddingLeft: "0.25rem",
         paddingRight: "0.25rem",
+        cursor: "text",
         transition: "border-color 0.2s ease",
         ":hover": {
             borderColor: "var(--tailwind-colors-slate-400)",
@@ -83,6 +84,7 @@ const selectStyles: StylesConfig<RuleOption, true, RuleOptionGroup> = {
         borderRadius: "0.375rem",
         paddingRight: "0.25rem",
         flexShrink: 0,
+        cursor: "pointer",
     }),
     multiValueLabel: (base: CSSObjectWithLabel, state: MultiValueProps<RuleOption, true, RuleOptionGroup>) => ({
         ...base,
@@ -98,6 +100,7 @@ const selectStyles: StylesConfig<RuleOption, true, RuleOptionGroup> = {
     multiValueRemove: (base: CSSObjectWithLabel, state: MultiValueProps<RuleOption, true, RuleOptionGroup>) => ({
         ...base,
         color: state.data.meta?.error ? "var(--tailwind-colors-rose-200)" : base.color,
+        cursor: "pointer",
         ":hover": {
             backgroundColor: state.data.meta?.error
                 ? "var(--tailwind-colors-rose-500)"
