@@ -36,6 +36,10 @@ import { toast } from "sonner";
 import { authToasts } from "@/lib/authToasts";
 import { subscribe, dispatch, type AppEvent } from '@/lib/eventBus';
 
+const DESKTOP_CONTENT_BASE_WIDTH = 1200;
+const ULTRAWIDE_CONTENT_MAX_WIDTH = 1360;
+const DESKTOP_CONTENT_CLAMP = `clamp(${DESKTOP_CONTENT_BASE_WIDTH}px, 76vw, ${ULTRAWIDE_CONTENT_MAX_WIDTH}px)`;
+
 // Auth context to manage authentication state
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -249,11 +253,18 @@ async function profilesOnlyLoader() {
 
 // Unified base layout for public/protected wrappers
 function BaseLayout({ children, mode }: { children: React.ReactNode, mode: 'public' | 'app' }) {
+  const { isDesktop } = useScreenDetector();
+  const contentMaxWidth = isDesktop ? DESKTOP_CONTENT_CLAMP : '100%';
   const baseClasses = 'relative flex flex-col min-h-screen overflow-x-hidden bg-[var(--shadcn-ui-app-background)]';
   if (mode === 'public') {
     return (
       <div data-testid="public-layout" className={baseClasses + ' w-full'} style={{ width: '100vw', maxWidth: '100vw' }}>
-        {children}
+        <div
+          className="mx-auto w-full px-4 sm:px-6 lg:px-8"
+          style={{ maxWidth: contentMaxWidth }}
+        >
+          {children}
+        </div>
       </div>
     );
   }
@@ -362,6 +373,8 @@ function ProtectedLayout() {
 
   const currentPageName = getCurrentPageName();
 
+  const contentMaxWidth = isDesktop ? DESKTOP_CONTENT_CLAMP : '100%';
+
   const sidebarWidth = navDesktop ? (collapsed ? 64 : 220) : 0;
   const rightPanelWidth = 600; // Width of the right panel guide
   const headerRightOffset = rightPanelOpen ? rightPanelWidth : 0;
@@ -378,9 +391,14 @@ function ProtectedLayout() {
         <div
           ref={connectionHeaderRef}
           className="fixed top-0 right-0 z-50 transition-all duration-500"
-          style={{ left: `${sidebarWidth}px` }}
+          style={{ left: `${sidebarWidth}px`, right: `${headerRightOffset}px` }}
         >
-          <ConnectionStatusHeader />
+          <div
+            className="mx-auto w-full px-4 sm:px-6 lg:px-8"
+            style={{ maxWidth: contentMaxWidth }}
+          >
+            <ConnectionStatusHeader />
+          </div>
         </div>
       )}
       {/* Fixed Header - responsive positioning */}
@@ -398,15 +416,20 @@ function ProtectedLayout() {
           right: '0px'
         }}
       >
-        <Header
-          profiles={profiles || []}
-          showProfileDropdown={showProfileDropdown}
-          showLogoutButton={showLogoutButton}
-          showDialogTrigger={showDialogTrigger}
-          currentPageName={currentPageName}
-          showConnectionStatusRestoreButton={shouldShowConnectionStatusRestore}
-          onRestoreConnectionStatus={() => setConnectionStatusVisible(true)}
-        />
+        <div
+          className="mx-auto w-full px-4 sm:px-6 lg:px-8"
+          style={{ maxWidth: contentMaxWidth }}
+        >
+          <Header
+            profiles={profiles || []}
+            showProfileDropdown={showProfileDropdown}
+            showLogoutButton={showLogoutButton}
+            showDialogTrigger={showDialogTrigger}
+            currentPageName={currentPageName}
+            showConnectionStatusRestoreButton={shouldShowConnectionStatusRestore}
+            onRestoreConnectionStatus={() => setConnectionStatusVisible(true)}
+          />
+        </div>
       </div>
       {/* Content area: responsive layout for mobile and desktop */}
       <div
@@ -428,7 +451,12 @@ function ProtectedLayout() {
           maxWidth: '100vw'
         }}
       >
-        <Outlet />
+        <div
+          className="mx-auto w-full px-4 sm:px-6 lg:px-8"
+          style={{ maxWidth: contentMaxWidth }}
+        >
+          <Outlet />
+        </div>
       </div>
     </AppLayout>
   );
