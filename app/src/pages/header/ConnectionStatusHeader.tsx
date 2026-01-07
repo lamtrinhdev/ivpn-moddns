@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { type JSX, useState } from "react";
 import { useAppStore } from "@/store/general";
 import { useDnsConnectionStatus } from "@/hooks/useDnsConnectionStatus";
+import { EyeOff, ChevronUp } from "lucide-react";
 
 export default function ConnectionStatusHeader(): JSX.Element | null {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -26,7 +27,7 @@ export default function ConnectionStatusHeader(): JSX.Element | null {
     return (
         <div
             data-testid="conn-header-root"
-            className={`flex h-12 items-center gap-2.5 px-6 py-3 bg-[var(--variable-collection-surface)] w-full transition-all duration-300 ease-in-out overflow-hidden ${isHiding ? 'opacity-0 -translate-y-full max-h-0' : 'opacity-100 translate-y-0 max-h-12'}`}
+            className={`flex h-12 items-center gap-2.5 px-4 sm:px-6 lg:px-8 py-3 bg-[var(--shadcn-ui-app-background)] w-full transition-all duration-300 ease-in-out overflow-hidden border-b border-[var(--tailwind-colors-slate-800)] ${isHiding ? 'opacity-0 -translate-y-full max-h-0' : 'opacity-100 translate-y-0 max-h-12'}`}
         >
             <div data-testid="conn-header-label" className="font-bold text-[var(--tailwind-colors-slate-50)] text-xs leading-3 whitespace-nowrap font-['Roboto_Mono-Bold',Helvetica]">
                 Status
@@ -39,10 +40,15 @@ export default function ConnectionStatusHeader(): JSX.Element | null {
             <div className="flex-1" />
             <Button
                 variant="ghost"
-                className="h-auto min-w-16 p-1.5 mt-[-4.00px] mb-[-4.00px] rounded-[6px] cursor-pointer hover:bg-[var(--tailwind-colors-rdns-alpha-900)] transition-colors duration-200"
+                className="h-auto min-w-0 px-2.5 py-1.5 mt-[-4px] mb-[-4px] rounded-[6px] cursor-pointer hover:bg-[var(--tailwind-colors-rdns-alpha-900)] transition-colors duration-200 text-[var(--tailwind-colors-rdns-600)] focus-visible:ring-2 focus-visible:ring-[var(--tailwind-colors-rdns-600)] focus-visible:ring-offset-0"
                 onClick={handleHide}
+                aria-label="Hide connection status bar"
             >
-                <span data-testid="conn-header-hide" className="px-1 text-xs leading-5 font-medium text-[var(--tailwind-colors-rdns-600)]">Hide</span>
+                <span className="flex items-center gap-1.5 text-xs leading-5 font-medium">
+                    <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span data-testid="conn-header-hide">Hide status</span>
+                    <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+                </span>
             </Button>
         </div>
     );
