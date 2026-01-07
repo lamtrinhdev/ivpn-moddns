@@ -97,7 +97,7 @@ services:
   #     - ../bootstrap/recursor:/opt/unbound/etc/unbound/
 
   mongodb:
-    image: mongo:7.0.8
+    image: mongo:8.2.3
     networks:
       - dnsnetwork
     container_name: mongodb
