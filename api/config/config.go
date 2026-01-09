@@ -90,7 +90,7 @@ func New() (*Config, error) {
 	}
 	serverFQDN := os.Getenv("SERVER_FQDN")
 	if serverFQDN == "" {
-		serverFQDN = "api.moddns.net"
+		serverFQDN = "app.moddns.net"
 	}
 
 	envAllowedDomains := os.Getenv("SERVER_ALLOWED_DOMAINS")
