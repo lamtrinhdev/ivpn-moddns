@@ -22,12 +22,67 @@ const (
 )
 
 // matchDomain checks if the domain matches the pattern, handling wildcards
+// and special domain formats used in custom rules.
+//
+// Rules:
+//   - "ads.com"      => matches only ads.com
+//   - "*.ads.com"    => matches ads.com and all its subdomains
+//   - ".ads.com"     => treated as "*.ads.com" (same as above)
 func (f *DomainFilter) matchDomain(domain, pattern string) bool {
-	if !strings.Contains(pattern, WILDCARD) {
-		return strings.EqualFold(domain, pattern)
+	domain = strings.ToLower(domain)
+	pattern = strings.ToLower(pattern)
+
+	if pattern == "" {
+		return false
 	}
 
-	// Get or compile regex pattern
+	// Support ".example.com" syntax by treating it as "*.example.com".
+	if strings.HasPrefix(pattern, ".") {
+		pattern = "*" + pattern
+	}
+
+	// No wildcard => exact match only.
+	if !strings.Contains(pattern, WILDCARD) {
+		return domain == pattern
+	}
+
+	// Special handling for patterns like "*.example.com" (and the ".example.com"
+	// equivalent above): they should match the root domain and any subdomain.
+	if strings.HasPrefix(pattern, "*.") && !strings.Contains(pattern[2:], WILDCARD) {
+		root := pattern[2:]
+		if domain == root {
+			return true
+		}
+		if strings.HasSuffix(domain, "."+root) {
+			return true
+		}
+		return false
+	}
+
+	// Fast path for suffix wildcard like "example.*"; matches base plus any TLD
+	// but not the bare base and not subdomains of the base.
+	if strings.HasSuffix(pattern, ".*") && strings.Count(pattern, WILDCARD) == 1 {
+		base := strings.TrimSuffix(pattern, ".*")
+		if base == "" {
+			return false
+		}
+		if strings.HasPrefix(domain, base+".") {
+			return true
+		}
+		return false
+	}
+
+	// Fast path for contains wildcard like "*example*" when the only wildcards
+	// are the leading and trailing asterisks.
+	if strings.HasPrefix(pattern, WILDCARD) && strings.HasSuffix(pattern, WILDCARD) && strings.Count(pattern, WILDCARD) == 2 {
+		needle := pattern[1 : len(pattern)-1]
+		if needle == "" {
+			return false
+		}
+		return strings.Contains(domain, needle)
+	}
+
+	// For all other wildcard patterns, fall back to regex-based matching.
 	var re *regexp.Regexp
 	if cached, ok := f.patternCache.Load(pattern); ok {
 		re = cached.(*regexp.Regexp)
