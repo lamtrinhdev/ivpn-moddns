@@ -3,7 +3,6 @@ import { useScreenDetector } from "@/hooks/useScreenDetector";
 
 interface NavigationCollapseContextType {
     collapsed: boolean;
-    toggleCollapse: () => void;
     setCollapsed: (collapsed: boolean) => void;
 }
 
@@ -13,21 +12,31 @@ export const NavigationCollapseProvider: React.FC<{ children: React.ReactNode }>
     const [collapsed, setCollapsed] = useState(false);
     const { navDesktop, width } = useScreenDetector();
 
-    // Auto-collapse on narrower desktops, expand on wider; keep sidebar collapsed when navDesktop is disabled
-    const AUTO_EXPAND_WIDTH = 1440;
+    // Hysteresis + debounce to avoid flicker near breakpoints
+    const EXPAND_WIDTH = 1440;
+    const COLLAPSE_WIDTH = 1360;
+    const DEBOUNCE_MS = 150;
 
     useEffect(() => {
-        if (!navDesktop) {
-            setCollapsed(true);
-            return;
-        }
-        setCollapsed(width < AUTO_EXPAND_WIDTH);
-    }, [navDesktop, width]);
+        if (typeof window === 'undefined') return;
 
-    const toggleCollapse = () => setCollapsed((prev) => !prev);
+        // navDesktop false => always collapse
+        const target = !navDesktop
+            ? true
+            : width >= EXPAND_WIDTH
+                ? false
+                : width < COLLAPSE_WIDTH
+                    ? true
+                    : collapsed; // within hysteresis band, keep state
+
+        if (target === collapsed) return;
+
+        const timer = window.setTimeout(() => setCollapsed(target), DEBOUNCE_MS);
+        return () => window.clearTimeout(timer);
+    }, [navDesktop, width, collapsed]);
 
     return (
-        <NavigationCollapseContext.Provider value={{ collapsed, toggleCollapse, setCollapsed }}>
+        <NavigationCollapseContext.Provider value={{ collapsed, setCollapsed }}>
             {children}
         </NavigationCollapseContext.Provider>
     );
