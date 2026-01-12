@@ -15,13 +15,17 @@ const (
 	// TODO: implement IPv4 and IPv6 wildcard patterns
 	// IPv4WildcardRegex = `^(\*|[0-9]+)\.(\*|[0-9]+)\.(\*|[0-9]+)\.(\*|[0-9]+)$`
 	// IPv6WildcardRegex = `^(\*|[0-9a-fA-F:]+)(:\*|:[0-9a-fA-F]+)*$`
-	FQDNWildcardRegex = `^[a-zA-Z0-9-]*\*[a-zA-Z0-9-]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)*$`
+	FQDNWildcardRegex     = `^[a-zA-Z0-9-]*\*[a-zA-Z0-9-]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)*$`
+	SuffixWildcardRegex   = `^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?)*\.\*$`
+	ContainsWildcardRegex = `^\*[a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9]\*$`
 )
 
 var wildcardPatterns = map[string]string{
 	// "ipv4": IPv4WildcardRegex,
 	// "ipv6": IPv6WildcardRegex,
-	"fqdn": FQDNWildcardRegex,
+	"fqdn":     FQDNWildcardRegex,
+	"suffix":   SuffixWildcardRegex,
+	"contains": ContainsWildcardRegex,
 }
 
 type ErrorResponse struct {
