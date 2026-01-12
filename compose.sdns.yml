@@ -1,6 +1,7 @@
 services:
   recursor_sdns:
-    image: c1982/sdns:1.4.0
+    image: c1982/sdns:1.6.0
+    command: ["-c", "/sdns.conf"]
     restart: always
     networks:
       dnsnetwork:

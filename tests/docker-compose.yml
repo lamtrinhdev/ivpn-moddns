@@ -75,7 +75,8 @@ services:
       - ./config/blocklists.env
 
   sdns:
-    image: c1982/sdns:1.3.7
+    image: c1982/sdns:1.6.0
+    command: ["-c", "/sdns.conf"]
     # restart: always # most probably unbound CI failures are caused by this line
     networks:
       dnsnetwork:
