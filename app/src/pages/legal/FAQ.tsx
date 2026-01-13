@@ -367,7 +367,7 @@ export default function FAQ(): JSX.Element {
                             <br />
                             • DoT (port 853): <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">laptop--8kqr1tbfco.dns.staging.ivpndns.net</code>
                             <br />
-                            • DoQ (port 54000): <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">phone--8kqr1tbfco.dns.staging.ivpndns.net</code>
+                            • DoQ (port 853): <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">phone--8kqr1tbfco.dns.staging.ivpndns.net</code>
                             <br /><br />
                             Replace PROFILE_ID with your actual profile ID and DEVICE_ID with a name for your device.
                         </div>
