@@ -99,6 +99,10 @@ func (p *ProfileService) CreateCustomRulesBulk(ctx context.Context, accountId, p
 		}
 
 		normalized, _ := strings.CutSuffix(trimmed, ".")
+		// Support ".example.com" syntax by normalizing to "*.example.com" for validation/storage
+		if strings.HasPrefix(normalized, ".") {
+			normalized = "*" + normalized
+		}
 
 		if _, exists := payloadSeen[normalized]; exists {
 			result.Skipped = append(result.Skipped, BulkCustomRuleSkipped{

@@ -109,7 +109,12 @@ func (v APIValidator) ValidateRequest(c *fiber.Ctx, payload any, errMsg string) 
 func (v APIValidator) wildcardValidation(fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 
-	// If no wildcard, skip validation (will be handled by other validators)
+	// Support leading dot syntax by treating ".example.com" as "*.example.com" for validation
+	if !strings.Contains(value, "*") && strings.HasPrefix(value, ".") {
+		value = "*" + value
+	}
+
+	// If still no wildcard, skip validation (handled by other validators)
 	if !strings.Contains(value, "*") {
 		return false
 	}
