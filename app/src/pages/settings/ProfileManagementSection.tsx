@@ -34,7 +34,7 @@ export default function ProfileManagementSection({ profiles }: ProfileManagement
         {
             title: "Subdomains blocking",
             description:
-                "Set how to handle subdomains of domain entries in added blocklists.",
+                "Set how to handle subdomains of domain entries in enabled blocklists.",
             options: [
                 { value: "block", label: "Block", icon: "octagon-x" as const },
                 { value: "allow", label: "Allow", icon: "check" as const },
