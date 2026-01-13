@@ -320,6 +320,11 @@ export default function MainContentSection({ profiles = [] }: Omit<MainContentSe
                                                     onClick={() => navigate("/settings")}
                                                 >
                                                     Settings
+                                                </span>. Wildcard options are available, see <span
+                                                    className="underline cursor-pointer"
+                                                    onClick={() => navigate("/faq")}
+                                                >
+                                                    FAQ
                                                 </span>.
                                             </div>
                                         </>
