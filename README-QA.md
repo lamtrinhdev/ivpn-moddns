@@ -100,7 +100,7 @@ Q examples:
 ./q wp.pl A @tls://ju8y5re4zc.dns.staging.ivpndns.net -v
 
 
-./q wp.pl A @quic://ju8y5re4zc.dns.staging.ivpndns.net:54000 -v
+./q wp.pl A @quic://ju8y5re4zc.dns.staging.ivpndns.net -v
 ```
 
 Local server:
@@ -113,11 +113,11 @@ Local server:
 I found a DNS client which is capable of sending all mentioned types of DNS requests, not only DoQ: https://github.com/natesales/q
 
 ```
-maciek@maciek-ThinkPad-T14s-Gen-4:~/git/coredns$ q -S wp.pl A @quic://123asd3.ivpndns.com:54000
+maciek@maciek-ThinkPad-T14s-Gen-4:~/git/coredns$ q -S wp.pl A @quic://123asd3.ivpndns.com
 2024/04/22 16:39:56 failed to sufficiently increase send buffer size (was: 208 kiB, wanted: 2048 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
 wp.pl. 2m51s A 212.77.98.9
 Stats:
-Received 44 B from 123asd3.ivpndns.com:54000 in 27.3ms (16:39:56 04-22-2024 CEST)
+Received 44 B from 123asd3.ivpndns.com in 27.3ms (16:39:56 04-22-2024 CEST)
 Opcode: QUERY Status: NOERROR ID 0: Flags: qr aa rd ra (1 Q 1 A 0 N 0 E)
 ```
 
