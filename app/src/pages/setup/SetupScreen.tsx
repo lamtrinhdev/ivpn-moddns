@@ -165,7 +165,7 @@ export default function Setup({ profiles: _ }: SetupProps): JSX.Element {
                                                             "DNS-over-TLS/QUIC": profileData.dnsOverTLS,
                                                             "DNS-over-HTTPS": profileData.dnsOverHTTPS,
                                                             "IPv4": profileData.ipv4,
-                                                            "IPv6": profileData.ipv6,
+                                                            // "IPv6": profileData.ipv6, // TODO: bring back when we have IPv6 support
                                                         }).map(([label, value], index) => {
                                                             const interactive = !isDesktop; // mobile & tablet
                                                             return (
