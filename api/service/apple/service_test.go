@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ivpn/dns/libs/deviceid"
 
 	"github.com/stretchr/testify/assert"
@@ -170,6 +171,37 @@ func TestAppleService_validate(t *testing.T) {
 				ProfileId: "test-profile",
 				AdvancedOptionsReq: &requests.AdvancedOptionsReq{
 					ExcludedWifiNetworks: "",
+				},
+			},
+		},
+		{
+			name: "Device ID normalized",
+			req: requests.MobileConfigReq{
+				ProfileId: "test-profile",
+				DeviceId:  "My@Device!",
+			},
+			wantErr: false,
+			want: requests.MobileConfigReq{
+				ProfileId:          "test-profile",
+				DeviceId:           deviceid.Normalize("My@Device!"),
+				AdvancedOptionsReq: nil,
+			},
+		},
+		{
+			name: "Trims and escapes WiFi names",
+			req: requests.MobileConfigReq{
+				ProfileId: "test-profile",
+				AdvancedOptionsReq: &requests.AdvancedOptionsReq{
+					EncryptionType:       "https",
+					ExcludedWifiNetworks: " Cafe & WiFi , Another ",
+				},
+			},
+			wantErr: false,
+			want: requests.MobileConfigReq{
+				ProfileId: "test-profile",
+				AdvancedOptionsReq: &requests.AdvancedOptionsReq{
+					EncryptionType:       "https",
+					ExcludedWifiNetworks: "Cafe &amp; WiFi,Another",
 				},
 			},
 		},
@@ -461,4 +493,83 @@ func TestGenerateMobileConfig_DeviceID(t *testing.T) {
 	outNorm := render(reqNorm)
 	expectedLogical := deviceid.Normalize(longRaw)
 	assert.Contains(t, outNorm, "/dns-query/prof123/"+deviceid.EncodeURL(expectedLogical))
+}
+
+func TestNewMobileConfig_DefaultsAndIdentifiers(t *testing.T) {
+	cfg := &config.Config{
+		Server: &config.ServerConfig{
+			DnsDomain:       "dns.example.com",
+			ServerAddresses: []string{"10.0.0.1", "10.0.0.2"},
+			FrontendDomain:  "frontend.example.com",
+		},
+		Service: &config.ServiceConfig{},
+	}
+	shortener := urlshort.NewURLShortener()
+	service := NewAppleService(cfg, mocks.NewCachecache(t), shortener)
+
+	ctx := context.Background()
+	rawDevice := "Device-One! 123"
+	req := requests.MobileConfigReq{ProfileId: "profile-1", DeviceId: rawDevice, AdvancedOptionsReq: &requests.AdvancedOptionsReq{}}
+
+	validated, err := service.validate(req)
+	require.NoError(t, err)
+
+	mobileCfg, err := service.newMobileConfig(ctx, *validated)
+	require.NoError(t, err)
+
+	expectedDevice := deviceid.Normalize(rawDevice)
+
+	assert.Equal(t, "profile-1", mobileCfg.ProfileId)
+	assert.Equal(t, expectedDevice, mobileCfg.DeviceId)
+	assert.Equal(t, deviceid.EncodeLabel(expectedDevice), mobileCfg.DeviceLabelEncoded)
+	assert.Equal(t, "https", mobileCfg.EncryptionType)
+	assert.True(t, mobileCfg.SignConfigurationProfile)
+	assert.Equal(t, cfg.Server.ServerAddresses, mobileCfg.ServerAddresses)
+	assert.Equal(t, cfg.Server.DnsDomain, mobileCfg.ServerDomain)
+	assert.Equal(t, "com.apple.dnsSettings.managed", mobileCfg.DNSSettingsPayloadType)
+	assert.True(t, strings.HasPrefix(mobileCfg.DNSSettingsPayloadIdentifier, "com.example.dns."))
+	assert.Nil(t, mobileCfg.ExcludedWifiNetworks)
+	assert.NotEqual(t, uuid.Nil, mobileCfg.PayloadIdentifier)
+	assert.NotEqual(t, uuid.Nil, mobileCfg.PayloadUUID)
+	assert.NotEqual(t, uuid.Nil, mobileCfg.DNSSettingsPayloadUUID)
+}
+
+func TestGenerateMobileConfig_NoLinkSkipsCache(t *testing.T) {
+	cfg := &config.Config{
+		Server: &config.ServerConfig{
+			DnsDomain:      "dns.com",
+			FrontendDomain: "frontend.com",
+		},
+		Service: &config.ServiceConfig{
+			MobileConfigCertPath:       "../../../certs/certificate.pem",
+			MobileConfigPrivateKeyPath: "../../../certs/private_key.pem",
+		},
+	}
+	mockCache := mocks.NewCachecache(t)
+	shortener := urlshort.NewURLShortener()
+	service := NewAppleService(cfg, mockCache, shortener)
+
+	ctx := context.Background()
+	req := requests.MobileConfigReq{ProfileId: "profile1", AdvancedOptionsReq: &requests.AdvancedOptionsReq{EncryptionType: "https"}}
+
+	data, link, err := service.GenerateMobileConfig(ctx, req, "acc", false)
+	require.NoError(t, err)
+	assert.NotEmpty(t, data)
+	assert.Empty(t, link)
+
+	mockCache.AssertNotCalled(t, "Set", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestSign_ReturnsErrorOnMissingFiles(t *testing.T) {
+	service := &AppleService{
+		CertPath:       "/tmp/does-not-exist.cert",
+		PrivateKeyPath: "/tmp/does-not-exist.key",
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("payload")
+
+	_, err := service.sign(buf)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no such file")
 }
