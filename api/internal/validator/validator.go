@@ -15,13 +15,17 @@ const (
 	// TODO: implement IPv4 and IPv6 wildcard patterns
 	// IPv4WildcardRegex = `^(\*|[0-9]+)\.(\*|[0-9]+)\.(\*|[0-9]+)\.(\*|[0-9]+)$`
 	// IPv6WildcardRegex = `^(\*|[0-9a-fA-F:]+)(:\*|:[0-9a-fA-F]+)*$`
-	FQDNWildcardRegex = `^[a-zA-Z0-9-]*\*[a-zA-Z0-9-]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)*$`
+	FQDNWildcardRegex     = `^[a-zA-Z0-9-]*\*[a-zA-Z0-9-]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)*$`
+	SuffixWildcardRegex   = `^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?)*\.\*$`
+	ContainsWildcardRegex = `^\*[a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9]\*$`
 )
 
 var wildcardPatterns = map[string]string{
 	// "ipv4": IPv4WildcardRegex,
 	// "ipv6": IPv6WildcardRegex,
-	"fqdn": FQDNWildcardRegex,
+	"fqdn":     FQDNWildcardRegex,
+	"suffix":   SuffixWildcardRegex,
+	"contains": ContainsWildcardRegex,
 }
 
 type ErrorResponse struct {
@@ -105,7 +109,12 @@ func (v APIValidator) ValidateRequest(c *fiber.Ctx, payload any, errMsg string) 
 func (v APIValidator) wildcardValidation(fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 
-	// If no wildcard, skip validation (will be handled by other validators)
+	// Support leading dot syntax by treating ".example.com" as "*.example.com" for validation
+	if !strings.Contains(value, "*") && strings.HasPrefix(value, ".") {
+		value = "*" + value
+	}
+
+	// If still no wildcard, skip validation (handled by other validators)
 	if !strings.Contains(value, "*") {
 		return false
 	}

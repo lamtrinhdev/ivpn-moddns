@@ -47,6 +47,12 @@ func Test_wildcardFQDNValidation(t *testing.T) {
 		{"FQDN with wildcard 6", "sub.*.example.com", true},
 		{"FQDN with invalid wildcard", "%.example.com", true},
 		{"FQDN with invalid format", "*.example", false}, // TODO: not sure what result should be
+		{"Suffix wildcard matches", "ads.*", false},
+		{"Suffix wildcard multi-label", "sub.ads.*", false},
+		{"Suffix wildcard invalid extra label", "ads.*.com", true},
+		{"Contains wildcard matches", "*ads*", false},
+		{"Contains wildcard with dots", "*ads.example*", false},
+		{"Contains wildcard missing middle", "**ads*", true},
 	}
 
 	for _, tt := range tests {
