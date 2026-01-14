@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/netip"
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/AdguardTeam/golibs/netutil"
 	"github.com/AdguardTeam/golibs/service"
 	"github.com/ivpn/dns/proxy/config"
 	"github.com/rs/zerolog/log"
@@ -90,6 +92,15 @@ func (s *Server) newProxyConfig(serverConfig *config.Config) (*proxy.Config, err
 	if err != nil {
 		return nil, err
 	}
+	trustedPrefixes := make([]netip.Prefix, 0, len(serverConfig.TrustedProxies))
+	for _, cidr := range serverConfig.TrustedProxies {
+		p, err := netip.ParsePrefix(cidr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid trusted proxy subnet %q: %w", cidr, err)
+		}
+		trustedPrefixes = append(trustedPrefixes, p)
+	}
+
 	conf := &proxy.Config{
 		UpstreamConfig: &proxy.UpstreamConfig{
 			Upstreams: []upstream.Upstream{
@@ -100,6 +111,7 @@ func (s *Server) newProxyConfig(serverConfig *config.Config) (*proxy.Config, err
 		RequestHandler:       s.RequestHandler(),
 		ResponseHandler:      s.ResponseHandler(),
 		TLSConfig:            tlsConfig,
+		TrustedProxies:       netutil.SliceSubnetSet(trustedPrefixes),
 		// CacheEnabled:         true,
 		// Note: Cache is disabled for now because IP filtering is not working with cache (filtering does not work at all when cache serves the responses)
 		Ratelimit: 0,

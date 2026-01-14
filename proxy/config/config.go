@@ -25,6 +25,7 @@ type Config struct {
 	DoQ                 *DoQConfig
 	Sentry              *SentryConfig
 	Log                 *LogConfig
+	TrustedProxies      []string
 	ProfileIDMinLength  int
 }
 
@@ -134,6 +135,20 @@ func LoadUpstreamConfig(upstreamsEnv, defaultRecursorEnv string) (*UpstreamConfi
 
 // New creates a new Config instance
 func New() (*Config, error) {
+	trustedProxies := []string{"10.5.0.0/16"}
+	if env := strings.TrimSpace(os.Getenv("TRUSTED_PROXIES")); env != "" {
+		candidates := strings.Split(env, ",")
+		trustedProxies = trustedProxies[:0]
+		for _, c := range candidates {
+			if cidr := strings.TrimSpace(c); cidr != "" {
+				trustedProxies = append(trustedProxies, cidr)
+			}
+		}
+		if len(trustedProxies) == 0 {
+			trustedProxies = []string{"10.5.0.0/16"}
+		}
+	}
+
 	// Profile ID min length (default 10)
 	profileIdMinLen := 10
 	if v := os.Getenv("PROFILE_ID_MIN_LENGTH"); v != "" {
@@ -204,6 +219,7 @@ func New() (*Config, error) {
 			DnsCheckDomain: dnsCheckDomain,
 			DnsCheckPort:   os.Getenv("DNS_CHECK_PORT"),
 		},
+		TrustedProxies:     trustedProxies,
 		ProfileIDMinLength: profileIdMinLen,
 		Cache: &cache.Config{
 			Address:               os.Getenv("CACHE_ADDRESS"),
