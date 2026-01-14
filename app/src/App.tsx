@@ -36,9 +36,11 @@ import { toast } from "sonner";
 import { authToasts } from "@/lib/authToasts";
 import { subscribe, dispatch, type AppEvent } from '@/lib/eventBus';
 
+// Desktop layout sizing constants
 const DESKTOP_CONTENT_BASE_WIDTH = 1200;
-const ULTRAWIDE_CONTENT_MAX_WIDTH = 1360;
-const DESKTOP_CONTENT_CLAMP = `clamp(${DESKTOP_CONTENT_BASE_WIDTH}px, 76vw, ${ULTRAWIDE_CONTENT_MAX_WIDTH}px)`;
+const DESKTOP_CONTENT_MAX_WIDTH = 1360;
+const DESKTOP_CONTENT_CLAMP = `clamp(${DESKTOP_CONTENT_BASE_WIDTH}px, 76vw, ${DESKTOP_CONTENT_MAX_WIDTH}px)`;
+const ULTRAWIDE_CONTENT_MAX_WIDTH = DESKTOP_CONTENT_MAX_WIDTH;
 
 // Auth context to manage authentication state
 type AuthContextType = {
@@ -253,18 +255,11 @@ async function profilesOnlyLoader() {
 
 // Unified base layout for public/protected wrappers
 function BaseLayout({ children, mode }: { children: React.ReactNode, mode: 'public' | 'app' }) {
-  const { isDesktop } = useScreenDetector();
-  const contentMaxWidth = isDesktop ? DESKTOP_CONTENT_CLAMP : '100%';
   const baseClasses = 'relative flex flex-col min-h-screen overflow-x-hidden bg-[var(--shadcn-ui-app-background)]';
   if (mode === 'public') {
     return (
       <div data-testid="public-layout" className={baseClasses + ' w-full'} style={{ width: '100vw', maxWidth: '100vw' }}>
-        <div
-          className="mx-auto w-full px-4 sm:px-6 lg:px-8"
-          style={{ maxWidth: contentMaxWidth }}
-        >
-          {children}
-        </div>
+        {children}
       </div>
     );
   }
@@ -281,7 +276,6 @@ const PublicLayout = ({ children }: { children: React.ReactNode }) => <BaseLayou
 
 // Layout for protected routes
 function ProtectedLayout() {
-  // Call ALL hooks first, before any conditional returns
   const { isAuthenticated } = useAuth();
   const { collapsed } = useNavigationCollapse();
   const rightPanelOpen = useAppStore((state) => state.rightPanelOpen);
@@ -290,29 +284,22 @@ function ProtectedLayout() {
   const setConnectionStatusVisible = useAppStore((state) => state.setConnectionStatusVisible);
   const { profiles } = useAppStore();
   const location = useLocation();
-  // IMPORTANT: call responsive detector BEFORE any conditional early return to maintain stable hook order
-  const { isDesktop, navDesktop } = useScreenDetector();
+  const { isDesktop, navDesktop, width: viewportWidth } = useScreenDetector();
 
-  // Refs for measuring fixed headers
   const connectionHeaderRef = useRef<HTMLDivElement | null>(null);
   const mainHeaderRef = useRef<HTMLDivElement | null>(null);
-  // Use shared hook; reduce spacing by 8px to tighten gap
   useHeaderStackHeight([connectionHeaderRef, mainHeaderRef], { reducePx: 30 });
 
-  // Reset right panel when navigating away from setup page
   useEffect(() => {
     if (rightPanelOpen && location.pathname !== '/setup') {
       setRightPanelOpen(false);
     }
   }, [location.pathname, rightPanelOpen, setRightPanelOpen]);
 
-  // Now handle conditional logic after all hooks are called
   const localAuthed = typeof window !== 'undefined' ? localStorage.getItem(AUTH_KEY) === 'true' : isAuthenticated;
 
   useEffect(() => {
-    const revalidate = () => {
-      // force React to reconsider by using a noop state update via navigation or location state change? Simplest: do nothing; Navigate check runs each render anyway.
-    };
+    const revalidate = () => { };
     window.addEventListener('auth:logout', revalidate);
     window.addEventListener('storage', (e) => { if (e.key === AUTH_KEY) revalidate(); });
     return () => {
@@ -321,23 +308,17 @@ function ProtectedLayout() {
   }, []);
 
   if (!isAuthenticated || !localAuthed) {
-    // eslint-disable-next-line no-console
-    // redirecting to /login (guard log removed)
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If user navigates directly to /, redirect to /home
   if (location.pathname === "/") {
     return <Navigate to="/home" replace />;
   }
 
-  // Determine if we should show the dialog trigger based on the current route
   const showDialogTrigger = location.pathname === '/blocklists' || location.pathname === '/query-logs' || location.pathname === '/custom-rules';
-
   const showProfileDropdown = location.pathname !== '/home' && location.pathname !== '/account-preferences';
   const showLogoutButton = location.pathname === '/account-preferences';
 
-  // Determine current page name based on route
   const getCurrentPageName = () => {
     switch (location.pathname) {
       case '/home':
@@ -359,7 +340,6 @@ function ProtectedLayout() {
       case '/faq':
         return 'FAQ';
       default:
-        // Handle dynamic routes or fallback
         if (location.pathname.startsWith('/setup/')) return 'DNS Setup';
         if (location.pathname.startsWith('/blocklists/')) return 'Blocklists';
         if (location.pathname.startsWith('/custom-rules/')) return 'Custom rules';
@@ -372,54 +352,55 @@ function ProtectedLayout() {
   };
 
   const currentPageName = getCurrentPageName();
+  const sidebarWidth = navDesktop ? (collapsed ? 64 : 220) : 0;
+  const rightPanelWidth = 600;
+  const headerRightOffset = rightPanelOpen ? rightPanelWidth : 0;
+  const headerTopOffset = (isDesktop && connectionStatusVisible) ? 48 : 0;
+  const shouldShowConnectionStatusRestore = isDesktop && !connectionStatusVisible;
+
+  const shellOffset = isDesktop && viewportWidth >= 1400
+    ? Math.max((viewportWidth - (sidebarWidth + ULTRAWIDE_CONTENT_MAX_WIDTH)) / 2, 0)
+    : 0;
 
   const contentMaxWidth = isDesktop ? DESKTOP_CONTENT_CLAMP : '100%';
 
-  const sidebarWidth = navDesktop ? (collapsed ? 64 : 220) : 0;
-  const rightPanelWidth = 600; // Width of the right panel guide
-  const headerRightOffset = rightPanelOpen ? rightPanelWidth : 0;
-  // Only reserve vertical space for connection status on desktop where it's rendered
-  const headerTopOffset = (isDesktop && connectionStatusVisible) ? 48 : 0;
-  const shouldShowConnectionStatusRestore = isDesktop && !connectionStatusVisible;
-  // content top spacing now handled dynamically via --app-header-stack variable
-
   return (
     <AppLayout>
-      {navDesktop && <div data-testid="persistent-sidebar"><NavigationMenu /></div>}
-      {/* Fixed ConnectionStatusHeader - hide entirely on mobile or when user hides it */}
+      {navDesktop && shellOffset > 0 && (
+        <div
+          aria-hidden
+          className="fixed top-0 left-0 h-screen"
+          style={{ width: `${shellOffset}px`, backgroundColor: 'var(--variable-collection-surface)', zIndex: 8 }}
+        />
+      )}
+      {navDesktop && <div data-testid="persistent-sidebar"><NavigationMenu offsetLeft={shellOffset} /></div>}
+
       {isDesktop && connectionStatusVisible && (
         <div
           ref={connectionHeaderRef}
           className="fixed top-0 right-0 z-50 transition-all duration-500"
-          style={{ left: `${sidebarWidth}px`, right: `${headerRightOffset}px` }}
+          style={{ left: `${sidebarWidth + shellOffset}px`, right: `${headerRightOffset + shellOffset}px` }}
         >
-          <div
-            className="mx-auto w-full px-4 sm:px-6 lg:px-8"
-            style={{ maxWidth: contentMaxWidth }}
-          >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
             <ConnectionStatusHeader />
           </div>
         </div>
       )}
-      {/* Fixed Header - responsive positioning */}
+
       <div
         ref={mainHeaderRef}
-        className={`fixed right-0 z-50 transition-all duration-500 ${isDesktop ? '' : 'left-0'
-          }`}
+        className={`fixed right-0 z-50 transition-all duration-500 ${isDesktop ? '' : 'left-0'}`}
         style={isDesktop ? {
           top: `${headerTopOffset}px`,
-          left: `${sidebarWidth}px`,
-          right: `${headerRightOffset}px`
+          left: `${sidebarWidth + shellOffset}px`,
+          right: `${headerRightOffset + shellOffset}px`
         } : {
           top: '0px',
           left: '0px',
           right: '0px'
         }}
       >
-        <div
-          className="mx-auto w-full px-4 sm:px-6 lg:px-8"
-          style={{ maxWidth: contentMaxWidth }}
-        >
+        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
           <Header
             profiles={profiles || []}
             showProfileDropdown={showProfileDropdown}
@@ -431,18 +412,17 @@ function ProtectedLayout() {
           />
         </div>
       </div>
-      {/* Content area: responsive layout for mobile and desktop */}
+
       <div
         data-testid="app-content"
         className="transition-all duration-200 bg-[var(--shadcn-ui-app-background)] w-full overflow-x-hidden box-border"
         style={isDesktop ? {
           paddingTop: 'var(--app-header-stack, 64px)',
-          marginLeft: `${sidebarWidth}px`,
-          width: `calc(100vw - ${sidebarWidth}px - ${headerRightOffset}px)`,
+          marginLeft: `${sidebarWidth + shellOffset}px`,
+          width: `calc(100vw - ${sidebarWidth + shellOffset}px - ${headerRightOffset + shellOffset}px)`,
           minHeight: 'calc(100vh - (var(--app-header-stack, 64px)))',
           maxWidth: '100vw'
         } : {
-          // Use header stack variable if provided; fallback to 110px padding
           paddingTop: 'var(--app-header-stack, 110px)',
           paddingLeft: '0px',
           marginLeft: '0px',
@@ -451,10 +431,7 @@ function ProtectedLayout() {
           maxWidth: '100vw'
         }}
       >
-        <div
-          className="mx-auto w-full px-4 sm:px-6 lg:px-8"
-          style={{ maxWidth: contentMaxWidth }}
-        >
+        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
           <Outlet />
         </div>
       </div>
@@ -469,7 +446,6 @@ function RootIndexRedirect() {
 
   return <Navigate to={target} replace />;
 }
-
 
 function SetupWithLoader() {
   const { account, profiles } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
