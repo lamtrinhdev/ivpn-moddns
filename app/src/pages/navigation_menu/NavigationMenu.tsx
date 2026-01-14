@@ -23,9 +23,10 @@ import api from "@/api/api";
 interface NavigationSectionProps {
     isMobile?: boolean;
     onClose?: () => void;
+    offsetLeft?: number;
 }
 
-export default function NavigationSection({ isMobile = false, onClose }: NavigationSectionProps): JSX.Element {
+export default function NavigationSection({ isMobile = false, onClose, offsetLeft = 0 }: NavigationSectionProps): JSX.Element {
     const { collapsed } = useNavigationCollapse();
     const navigate = useNavigate();
     const auth = useContext(AuthContext);
@@ -115,7 +116,7 @@ export default function NavigationSection({ isMobile = false, onClose }: Navigat
             aria-label="Primary"
             /* Mobile menu: ensure scrollable in landscape by using dynamic viewport height and enabling vertical overflow. */
             className={`${isMobile ? 'relative w-full' : `fixed top-0 left-0 ${sidebarWidth}`} bg-[var(--variable-collection-surface)] ${isMobile ? '' : 'h-screen'} flex flex-col justify-between p-2 transition-all duration-200 ${isMobile ? 'z-auto overflow-y-auto overscroll-contain' : 'z-10'}`}
-            style={isMobile ? { height: '100dvh', maxHeight: '100dvh' } : { minWidth: collapsed ? 64 : 220 }}
+            style={isMobile ? { height: '100dvh', maxHeight: '100dvh' } : { minWidth: collapsed ? 64 : 220, left: offsetLeft }}
         >
             <div className="flex flex-col h-full justify-between">
                 <div className="flex flex-col gap-6">
