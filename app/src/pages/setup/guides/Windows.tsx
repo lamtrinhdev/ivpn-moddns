@@ -54,7 +54,7 @@ export const createWindowsSteps = (deps: WindowsGuideDeps) => {
       step: 5,
       instruction: (
         <span>
-          In the <span className="font-medium">Preferred DNS</span> field, enter the {primaryIp} IP address
+          In the <span className="font-medium">Preferred DNS</span> field, enter the <CodeBlock inline noWrap value={primaryIp} /> IP address
         </span>
       ),
     },
