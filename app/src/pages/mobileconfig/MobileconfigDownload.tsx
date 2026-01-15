@@ -14,11 +14,29 @@ export default function MobileconfigDownload(): JSX.Element {
     const [success, setSuccess] = useState(false);
     const [errorMessage, setErrorMessage] = useState('Unable to download the configuration profile. The link may have expired or is invalid.');
 
+    const isIOSDevice = () => {
+        if (typeof navigator === 'undefined') return false;
+
+        // iPadOS sometimes reports as MacIntel; include touch-point heuristic.
+        const ua = navigator.userAgent || '';
+        const isIPhoneIPadIPod = /iPad|iPhone|iPod/.test(ua);
+        const isIPadOS = navigator.platform === 'MacIntel' && (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints && (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints! > 1;
+        return isIPhoneIPadIPod || isIPadOS;
+    };
+
     const downloadMobileConfig = async () => {
         if (!code) {
             setError(true);
             setErrorMessage('Invalid download link. The code parameter is missing.');
             setLoading(false);
+            return;
+        }
+
+        // For iOS Safari, the configuration profile must be delivered via direct navigation
+        // (not XHR/blob) to trigger the native profile download/install dialogs.
+        if (isIOSDevice()) {
+            const directUrl = `${import.meta.env.VITE_API_URL}/api/v1/short/${code}`;
+            window.location.href = directUrl;
             return;
         }
 
