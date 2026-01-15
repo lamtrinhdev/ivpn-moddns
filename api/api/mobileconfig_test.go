@@ -137,7 +137,7 @@ func TestGenerateMobileConfigShortLinkHandler_Table(t *testing.T) {
 			bodyCheck: func(t *testing.T, resp *http.Response) {
 				var out map[string]string
 				require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
-				assert.Equal(t, "http://example.com/api/v1/short/abc", out["link"])
+				assert.Equal(t, "https://frontend/short/abc", out["link"])
 				assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 			},
 		},

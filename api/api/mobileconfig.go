@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/url"
-	"path"
 	"strings"
 	"time"
 
@@ -94,24 +92,6 @@ func (s *APIServer) generateMobileConfigShortLink() fiber.Handler {
 		_, link, err := s.Service.GenerateMobileConfig(ctx, *p, accountId, true)
 		if err != nil {
 			return HandleError(c, err, ErrFailedToGenerateMobileConfig.Error())
-		}
-
-		// The Apple service currently produces a frontend URL (e.g. https://app.moddns.net/short/<token>).
-		// For iOS, the QR/link must navigate directly to the API endpoint returning a .mobileconfig response,
-		// otherwise (e.g. XHR/blob downloads) iOS won't show native profile download/install dialogs.
-		code := ""
-		if parsed, parseErr := url.Parse(link); parseErr == nil {
-			code = path.Base(parsed.Path)
-		}
-		if code == "" {
-			// Fallback parsing for unexpected formats.
-			lastSlash := strings.LastIndex(link, "/")
-			if lastSlash >= 0 && lastSlash < len(link)-1 {
-				code = link[lastSlash+1:]
-			}
-		}
-		if code != "" {
-			link = fmt.Sprintf("%s/api/v1/short/%s", c.BaseURL(), code)
 		}
 
 		res := new(responses.ShortLinkResponse)
