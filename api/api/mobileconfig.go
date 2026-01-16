@@ -50,12 +50,11 @@ func (s *APIServer) generateMobileConfig() fiber.Handler {
 		}
 
 		c.Set("Content-Type", "application/x-apple-aspen-config")
-		// Use inline disposition - frontend handles download via blob for desktop browsers,
-		// while direct navigation triggers iOS profile installation on mobile devices
-		// Set filename with profile_id for proper identification
-		filename := fmt.Sprintf("inline; filename=modDNS-%s.mobileconfig", p.ProfileId)
+		// Use attachment disposition with a proper filename; direct navigation on iOS Safari
+		// triggers the native profile download/install prompts.
+		filename := fmt.Sprintf("attachment; filename=modDNS-%s.mobileconfig", p.ProfileId)
 		c.Set("Content-Disposition", filename)
-		return c.Status(201).SendString(string(mobileconfig))
+		return c.Status(201).Send(mobileconfig)
 	}
 	return handler
 }
@@ -94,6 +93,7 @@ func (s *APIServer) generateMobileConfigShortLink() fiber.Handler {
 		if err != nil {
 			return HandleError(c, err, ErrFailedToGenerateMobileConfig.Error())
 		}
+
 		res := new(responses.ShortLinkResponse)
 		res.Link = link
 		c.Set("Content-Type", "application/json")
@@ -135,11 +135,11 @@ func (s *APIServer) downloadMobileConfigFromLink() fiber.Handler {
 		// Set the correct content type for .mobileconfig files
 		c.Set("Content-Type", "application/x-apple-aspen-config")
 
-		// Use inline disposition with proper filename including profile_id
-		filename := fmt.Sprintf("inline; filename=modDNS-%s.mobileconfig", profileId)
+		// Use attachment disposition to trigger Safari/iOS profile download prompts.
+		filename := fmt.Sprintf("attachment; filename=modDNS-%s.mobileconfig", profileId)
 		c.Set("Content-Disposition", filename)
 
-		return c.SendString(string(mobileConfigData))
+		return c.Send(mobileConfigData)
 	}
 	return handler
 }

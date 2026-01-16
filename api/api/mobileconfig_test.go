@@ -43,6 +43,7 @@ func TestGenerateMobileConfigHandler_Table(t *testing.T) {
 			statusCode: http.StatusCreated,
 			headerCheck: func(t *testing.T, resp *http.Response) {
 				assert.Equal(t, "application/x-apple-aspen-config", resp.Header.Get("Content-Type"))
+				assert.Contains(t, resp.Header.Get("Content-Disposition"), "attachment")
 				assert.Contains(t, resp.Header.Get("Content-Disposition"), "modDNS-p1.mobileconfig")
 			},
 			bodyCheck: func(t *testing.T, resp *http.Response) {
@@ -219,7 +220,7 @@ func TestDownloadMobileConfigFromLink_Table(t *testing.T) {
 			body:   "mcdata",
 			headers: map[string]string{
 				"Content-Type":        "application/x-apple-aspen-config",
-				"Content-Disposition": "inline; filename=modDNS-p1.mobileconfig",
+				"Content-Disposition": "attachment; filename=modDNS-p1.mobileconfig",
 			},
 		},
 		{
@@ -232,7 +233,7 @@ func TestDownloadMobileConfigFromLink_Table(t *testing.T) {
 			body:   "mcdata",
 			headers: map[string]string{
 				"Content-Type":        "application/x-apple-aspen-config",
-				"Content-Disposition": "inline; filename=modDNS-profile.mobileconfig",
+				"Content-Disposition": "attachment; filename=modDNS-profile.mobileconfig",
 			},
 		},
 		{
@@ -245,7 +246,7 @@ func TestDownloadMobileConfigFromLink_Table(t *testing.T) {
 			body:   "|mcdata",
 			headers: map[string]string{
 				"Content-Type":        "application/x-apple-aspen-config",
-				"Content-Disposition": "inline; filename=modDNS-profile.mobileconfig",
+				"Content-Disposition": "attachment; filename=modDNS-profile.mobileconfig",
 			},
 		},
 		{
