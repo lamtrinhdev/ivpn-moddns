@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -228,28 +230,26 @@ func (a *AppleService) newMobileConfig(ctx context.Context, req requests.MobileC
 }
 
 func (a *AppleService) sign(configFile bytes.Buffer) ([]byte, error) {
-	// Read certificate
 	certData, err := os.ReadFile(a.CertPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read signing certificate: %w", err)
 	}
-	certBlock, _ := pem.Decode(certData)
-	cert, err := x509.ParseCertificate(certBlock.Bytes)
+	certs, err := parsePEMCertificates(certData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse signing certificate(s): %w", err)
 	}
+	if len(certs) == 0 {
+		return nil, fmt.Errorf("no certificates found in %s", a.CertPath)
+	}
+	signerCert := certs[0]
 
-	// Load private key
 	keyFile, err := os.ReadFile(a.PrivateKeyPath)
 	if err != nil {
-		fmt.Println("Error reading private key:", err)
-		return nil, err
+		return nil, fmt.Errorf("read signing private key: %w", err)
 	}
-	block, _ := pem.Decode(keyFile)
-	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	privateKey, err := parsePEMRSAPrivateKey(keyFile)
 	if err != nil {
-		fmt.Println("Error parsing private key:", err)
-		return nil, err
+		return nil, fmt.Errorf("parse signing private key: %w", err)
 	}
 
 	// Create a new PKCS#7 signer
@@ -259,8 +259,14 @@ func (a *AppleService) sign(configFile bytes.Buffer) ([]byte, error) {
 	}
 
 	// Add the signer
-	if err := p7.AddSigner(cert, privateKey, pkcs7.SignerInfoConfig{}); err != nil {
+	if err := p7.AddSigner(signerCert, privateKey, pkcs7.SignerInfoConfig{}); err != nil {
 		return nil, fmt.Errorf("error adding signer: %w", err)
+	}
+
+	// Embed the parent certificate(s) in the SignedData so clients (notably iOS)
+	// can validate the chain without fetching intermediates.
+	for _, cert := range certs[1:] {
+		p7.AddCertificate(cert)
 	}
 
 	// Finish the signing process
@@ -269,6 +275,68 @@ func (a *AppleService) sign(configFile bytes.Buffer) ([]byte, error) {
 		return nil, fmt.Errorf("error finishing signing: %w", err)
 	}
 	return signedData, nil
+}
+
+func parsePEMCertificates(pemData []byte) ([]*x509.Certificate, error) {
+	var certs []*x509.Certificate
+
+	for len(pemData) > 0 {
+		var block *pem.Block
+		block, pemData = pem.Decode(pemData)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, cert)
+	}
+
+	if len(certs) == 0 {
+		return nil, fmt.Errorf("no PEM certificates found")
+	}
+	return certs, nil
+}
+
+func parsePEMRSAPrivateKey(pemData []byte) (crypto.PrivateKey, error) {
+	for len(pemData) > 0 {
+		var block *pem.Block
+		block, pemData = pem.Decode(pemData)
+		if block == nil {
+			break
+		}
+		if strings.Contains(block.Type, "PRIVATE KEY") == false {
+			continue
+		}
+		if x509.IsEncryptedPEMBlock(block) {
+			return nil, fmt.Errorf("encrypted PEM private keys are not supported")
+		}
+		switch block.Type {
+		case "RSA PRIVATE KEY":
+			key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+			if err != nil {
+				return nil, err
+			}
+			return key, nil
+		case "PRIVATE KEY":
+			key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+			if err != nil {
+				return nil, err
+			}
+			rsaKey, ok := key.(*rsa.PrivateKey)
+			if !ok {
+				return nil, fmt.Errorf("unsupported PKCS#8 private key type %T (RSA required)", key)
+			}
+			return rsaKey, nil
+		default:
+			return nil, fmt.Errorf("unsupported private key PEM block type %q (RSA required)", block.Type)
+		}
+	}
+	return nil, fmt.Errorf("no PEM private key found")
 }
 
 func checkDomain(name string) error {
