@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -17,11 +18,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"github.com/fullsailor/pkcs7"
 	"github.com/ivpn/dns/api/api/requests"
 	"github.com/ivpn/dns/api/cache"
 	"github.com/ivpn/dns/api/config"
 	"github.com/ivpn/dns/api/model"
+	"github.com/ivpn/dns/api/service/apple/pkcs7"
 	"github.com/ivpn/dns/libs/deviceid"
 	"github.com/ivpn/dns/libs/urlshort"
 )
@@ -316,6 +317,12 @@ func parsePEMRSAPrivateKey(pemData []byte) (crypto.PrivateKey, error) {
 			return nil, fmt.Errorf("encrypted PEM private keys are not supported")
 		}
 		switch block.Type {
+		case "EC PRIVATE KEY":
+			key, err := x509.ParseECPrivateKey(block.Bytes)
+			if err != nil {
+				return nil, err
+			}
+			return key, nil
 		case "RSA PRIVATE KEY":
 			key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 			if err != nil {
@@ -327,13 +334,16 @@ func parsePEMRSAPrivateKey(pemData []byte) (crypto.PrivateKey, error) {
 			if err != nil {
 				return nil, err
 			}
-			rsaKey, ok := key.(*rsa.PrivateKey)
-			if !ok {
-				return nil, fmt.Errorf("unsupported PKCS#8 private key type %T (RSA required)", key)
+			switch k := key.(type) {
+			case *rsa.PrivateKey:
+				return k, nil
+			case *ecdsa.PrivateKey:
+				return k, nil
+			default:
+				return nil, fmt.Errorf("unsupported PKCS#8 private key type %T (RSA or ECDSA required)", key)
 			}
-			return rsaKey, nil
 		default:
-			return nil, fmt.Errorf("unsupported private key PEM block type %q (RSA required)", block.Type)
+			return nil, fmt.Errorf("unsupported private key PEM block type %q (RSA or ECDSA required)", block.Type)
 		}
 	}
 	return nil, fmt.Errorf("no PEM private key found")
