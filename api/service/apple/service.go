@@ -310,10 +310,10 @@ func parsePEMRSAPrivateKey(pemData []byte) (crypto.PrivateKey, error) {
 		if block == nil {
 			break
 		}
-		if strings.Contains(block.Type, "PRIVATE KEY") == false {
+		if !strings.Contains(block.Type, "PRIVATE KEY") {
 			continue
 		}
-		if x509.IsEncryptedPEMBlock(block) {
+		if x509.IsEncryptedPEMBlock(block) { //nolint:staticcheck // legacy PEM encryption detection; we intentionally reject encrypted PEM keys
 			return nil, fmt.Errorf("encrypted PEM private keys are not supported")
 		}
 		switch block.Type {

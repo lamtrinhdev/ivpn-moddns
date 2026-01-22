@@ -1,3 +1,6 @@
+//go:build pkcs7_legacy
+// +build pkcs7_legacy
+
 package pkcs7
 
 import (

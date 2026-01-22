@@ -1,3 +1,5 @@
+//go:build pkcs7_legacy
+
 // Package pkcs7 implements parsing and generation of some PKCS#7 structures.
 package pkcs7
 
@@ -6,7 +8,7 @@ import (
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/des"
+	"crypto/des" //nolint:gosec // legacy CMS/PKCS#7 support
 	"crypto/ecdsa"
 	"crypto/hmac"
 	"crypto/rand"
@@ -20,7 +22,7 @@ import (
 	"sort"
 	"time"
 
-	_ "crypto/sha1" // for crypto.SHA1
+	_ "crypto/sha1" //nolint:gosec // required to enable SHA-1 hash implementation when verifying legacy signatures
 )
 
 // PKCS7 Represents a PKCS7 structure
@@ -150,7 +152,9 @@ func Parse(data []byte) (p7 *PKCS7, err error) {
 
 func parseSignedData(data []byte) (*PKCS7, error) {
 	var sd signedData
-	asn1.Unmarshal(data, &sd)
+	if _, err := asn1.Unmarshal(data, &sd); err != nil {
+		return nil, err
+	}
 	certs, err := sd.Certificates.Parse()
 	if err != nil {
 		return nil, err
@@ -280,7 +284,9 @@ func marshalAttributes(attrs []attribute) ([]byte, error) {
 
 	// Remove the leading sequence octets
 	var raw asn1.RawValue
-	asn1.Unmarshal(encodedAttributes, &raw)
+	if _, err := asn1.Unmarshal(encodedAttributes, &raw); err != nil {
+		return nil, err
+	}
 	return raw.Bytes, nil
 }
 
@@ -398,9 +404,9 @@ func (eci encryptedContentInfo) decrypt(key []byte) ([]byte, error) {
 
 	switch {
 	case alg.Equal(oidEncryptionAlgorithmDESCBC):
-		block, err = des.NewCipher(key)
+		block, err = des.NewCipher(key) //nolint:gosec // legacy algorithm support
 	case alg.Equal(oidEncryptionAlgorithmDESEDE3CBC):
-		block, err = des.NewTripleDESCipher(key)
+		block, err = des.NewTripleDESCipher(key) //nolint:gosec // legacy algorithm support
 	case alg.Equal(oidEncryptionAlgorithmAES256CBC):
 		fallthrough
 	case alg.Equal(oidEncryptionAlgorithmAES128GCM), alg.Equal(oidEncryptionAlgorithmAES128CBC):
@@ -871,12 +877,15 @@ func encryptDESCBC(content []byte) ([]byte, *encryptedContentInfo, error) {
 	}
 
 	// Encrypt padded content
-	block, err := des.NewCipher(key)
+	block, err := des.NewCipher(key) //nolint:gosec // legacy algorithm support
 	if err != nil {
 		return nil, nil, err
 	}
 	mode := cipher.NewCBCEncrypter(block, iv)
 	plaintext, err := pad(content, mode.BlockSize())
+	if err != nil {
+		return nil, nil, err
+	}
 	cyphertext := make([]byte, len(plaintext))
 	mode.CryptBlocks(cyphertext, plaintext)
 
