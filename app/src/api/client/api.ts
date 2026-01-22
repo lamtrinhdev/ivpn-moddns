@@ -96,6 +96,19 @@ export interface ApiRegisterAccountBody {
 /**
  * 
  * @export
+ * @interface ApiServicesUpdates
+ */
+export interface ApiServicesUpdates {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ApiServicesUpdates
+     */
+    'service_ids': Array<string>;
+}
+/**
+ * 
+ * @export
  * @interface ApiVerifyEmailOTPBody
  */
 export interface ApiVerifyEmailOTPBody {
@@ -484,6 +497,12 @@ export interface ModelPrivacy {
     'default_rule': ModelPrivacyDefaultRuleEnum;
     /**
      * 
+     * @type {ModelServicesSettings}
+     * @memberof ModelPrivacy
+     */
+    'services'?: ModelServicesSettings;
+    /**
+     * 
      * @type {string}
      * @memberof ModelPrivacy
      */
@@ -730,6 +749,19 @@ export interface ModelSecurity {
      * @memberof ModelSecurity
      */
     'dnssec': ModelDNSSECSettings;
+}
+/**
+ * 
+ * @export
+ * @interface ModelServicesSettings
+ */
+export interface ModelServicesSettings {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ModelServicesSettings
+     */
+    'blocked'?: Array<string>;
 }
 /**
  * 
@@ -1675,6 +1707,50 @@ export interface ResponsesWebAuthnReauthFinishResponse {
      * @memberof ResponsesWebAuthnReauthFinishResponse
      */
     'reauth_token'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface ServicescatalogCatalog
+ */
+export interface ServicescatalogCatalog {
+    /**
+     * 
+     * @type {Array<ServicescatalogService>}
+     * @memberof ServicescatalogCatalog
+     */
+    'services'?: Array<ServicescatalogService>;
+}
+/**
+ * 
+ * @export
+ * @interface ServicescatalogService
+ */
+export interface ServicescatalogService {
+    /**
+     * 
+     * @type {Array<number>}
+     * @memberof ServicescatalogService
+     */
+    'asns'?: Array<number>;
+    /**
+     * 
+     * @type {string}
+     * @memberof ServicescatalogService
+     */
+    'id'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ServicescatalogService
+     */
+    'logo_key'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ServicescatalogService
+     */
+    'name'?: string;
 }
 /**
  * 
@@ -3933,6 +4009,86 @@ export const ProfileApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
+         * Disable services for a profile (removes from privacy.services.blocked)
+         * @summary Disable services
+         * @param {string} id Profile ID
+         * @param {ApiServicesUpdates} serviceIds Services to disable
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        apiV1ProfilesIdServicesDelete: async (id: string, serviceIds: ApiServicesUpdates, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('apiV1ProfilesIdServicesDelete', 'id', id)
+            // verify required parameter 'serviceIds' is not null or undefined
+            assertParamExists('apiV1ProfilesIdServicesDelete', 'serviceIds', serviceIds)
+            const localVarPath = `/api/v1/profiles/{id}/services`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(serviceIds, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Enable services for a profile (adds to privacy.services.blocked)
+         * @summary Enable services
+         * @param {string} id Profile ID
+         * @param {ApiServicesUpdates} serviceIds Services to enable
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        apiV1ProfilesIdServicesPost: async (id: string, serviceIds: ApiServicesUpdates, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('apiV1ProfilesIdServicesPost', 'id', id)
+            // verify required parameter 'serviceIds' is not null or undefined
+            assertParamExists('apiV1ProfilesIdServicesPost', 'serviceIds', serviceIds)
+            const localVarPath = `/api/v1/profiles/{id}/services`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(serviceIds, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Create profile
          * @summary Create profile
          * @param {ApiCreateProfileBody} body Create profile request
@@ -4101,6 +4257,34 @@ export const ProfileApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Disable services for a profile (removes from privacy.services.blocked)
+         * @summary Disable services
+         * @param {string} id Profile ID
+         * @param {ApiServicesUpdates} serviceIds Services to disable
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async apiV1ProfilesIdServicesDelete(id: string, serviceIds: ApiServicesUpdates, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1ProfilesIdServicesDelete(id, serviceIds, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['ProfileApi.apiV1ProfilesIdServicesDelete']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Enable services for a profile (adds to privacy.services.blocked)
+         * @summary Enable services
+         * @param {string} id Profile ID
+         * @param {ApiServicesUpdates} serviceIds Services to enable
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async apiV1ProfilesIdServicesPost(id: string, serviceIds: ApiServicesUpdates, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1ProfilesIdServicesPost(id, serviceIds, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['ProfileApi.apiV1ProfilesIdServicesPost']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Create profile
          * @summary Create profile
          * @param {ApiCreateProfileBody} body Create profile request
@@ -4217,6 +4401,28 @@ export const ProfileApiFactory = function (configuration?: Configuration, basePa
          */
         apiV1ProfilesIdPatch(id: string, body: RequestsProfileUpdates, options?: RawAxiosRequestConfig): AxiosPromise<ModelProfile> {
             return localVarFp.apiV1ProfilesIdPatch(id, body, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Disable services for a profile (removes from privacy.services.blocked)
+         * @summary Disable services
+         * @param {string} id Profile ID
+         * @param {ApiServicesUpdates} serviceIds Services to disable
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        apiV1ProfilesIdServicesDelete(id: string, serviceIds: ApiServicesUpdates, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.apiV1ProfilesIdServicesDelete(id, serviceIds, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Enable services for a profile (adds to privacy.services.blocked)
+         * @summary Enable services
+         * @param {string} id Profile ID
+         * @param {ApiServicesUpdates} serviceIds Services to enable
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        apiV1ProfilesIdServicesPost(id: string, serviceIds: ApiServicesUpdates, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.apiV1ProfilesIdServicesPost(id, serviceIds, options).then((request) => request(axios, basePath));
         },
         /**
          * Create profile
@@ -4349,6 +4555,32 @@ export class ProfileApi extends BaseAPI {
      */
     public apiV1ProfilesIdPatch(id: string, body: RequestsProfileUpdates, options?: RawAxiosRequestConfig) {
         return ProfileApiFp(this.configuration).apiV1ProfilesIdPatch(id, body, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Disable services for a profile (removes from privacy.services.blocked)
+     * @summary Disable services
+     * @param {string} id Profile ID
+     * @param {ApiServicesUpdates} serviceIds Services to disable
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProfileApi
+     */
+    public apiV1ProfilesIdServicesDelete(id: string, serviceIds: ApiServicesUpdates, options?: RawAxiosRequestConfig) {
+        return ProfileApiFp(this.configuration).apiV1ProfilesIdServicesDelete(id, serviceIds, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Enable services for a profile (adds to privacy.services.blocked)
+     * @summary Enable services
+     * @param {string} id Profile ID
+     * @param {ApiServicesUpdates} serviceIds Services to enable
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProfileApi
+     */
+    public apiV1ProfilesIdServicesPost(id: string, serviceIds: ApiServicesUpdates, options?: RawAxiosRequestConfig) {
+        return ProfileApiFp(this.configuration).apiV1ProfilesIdServicesPost(id, serviceIds, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -4675,6 +4907,107 @@ export const ApiV1ProfilesIdLogsGetSortByEnum = {
     ClientIp: 'client_ip'
 } as const;
 export type ApiV1ProfilesIdLogsGetSortByEnum = typeof ApiV1ProfilesIdLogsGetSortByEnum[keyof typeof ApiV1ProfilesIdLogsGetSortByEnum];
+
+
+/**
+ * ServicesApi - axios parameter creator
+ * @export
+ */
+export const ServicesApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Get available ASN-based services presets
+         * @summary Get services catalog
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        apiV1ServicesGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/v1/services`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * ServicesApi - functional programming interface
+ * @export
+ */
+export const ServicesApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = ServicesApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Get available ASN-based services presets
+         * @summary Get services catalog
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async apiV1ServicesGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ServicescatalogCatalog>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1ServicesGet(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['ServicesApi.apiV1ServicesGet']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * ServicesApi - factory interface
+ * @export
+ */
+export const ServicesApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = ServicesApiFp(configuration)
+    return {
+        /**
+         * Get available ASN-based services presets
+         * @summary Get services catalog
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        apiV1ServicesGet(options?: RawAxiosRequestConfig): AxiosPromise<ServicescatalogCatalog> {
+            return localVarFp.apiV1ServicesGet(options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * ServicesApi - object-oriented interface
+ * @export
+ * @class ServicesApi
+ * @extends {BaseAPI}
+ */
+export class ServicesApi extends BaseAPI {
+    /**
+     * Get available ASN-based services presets
+     * @summary Get services catalog
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ServicesApi
+     */
+    public apiV1ServicesGet(options?: RawAxiosRequestConfig) {
+        return ServicesApiFp(this.configuration).apiV1ServicesGet(options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
 
 
 /**

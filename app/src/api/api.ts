@@ -72,6 +72,7 @@ const Client = {
   profilesApi: new client.ProfileApi(config),
   queryLogsApi: new client.QueryLogsApi(config),
   blocklistsApi: new client.BlocklistsApi(config),
+  servicesApi: new client.ServicesApi(config),
   verificationApi: new client.VerificationApi(config),
   appleMobileconfigApi: new client.AppleMobileconfigApi(config),
   sessionsApi: new client.SessionsApi(config),
