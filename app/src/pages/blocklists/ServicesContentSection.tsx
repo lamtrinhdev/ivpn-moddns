@@ -4,6 +4,7 @@ import api from "@/api/api";
 import { useAppStore } from "@/store/general";
 import { toast } from "sonner";
 import ServiceCard from "@/pages/blocklists/ServiceCard";
+import { getServiceLogoSrc } from "@/assets/services";
 import type {
     ApiServicesUpdates,
     ServicescatalogService,
@@ -14,6 +15,11 @@ function formatASNs(asns?: Array<number>): string {
     const shown = asns.slice(0, 5).join(", ");
     if (asns.length <= 5) return `ASNs: ${shown}`;
     return `ASNs: ${shown} +${asns.length - 5}`;
+}
+
+function formatASNsTitle(asns?: Array<number>): string {
+    if (!asns || asns.length === 0) return "No ASNs";
+    return `ASNs: ${asns.join(", ")}`;
 }
 
 export default function ServicesContentSection(): JSX.Element {
@@ -114,13 +120,17 @@ export default function ServicesContentSection(): JSX.Element {
                                 const name = svc.name ?? "Unnamed";
                                 const isBlocked = id ? blockedServices.includes(id) : false;
                                 const asnsLabel = formatASNs(svc.asns);
+                                const asnsTitle = formatASNsTitle(svc.asns);
+                                const logoSrc = getServiceLogoSrc({ serviceId: id, serviceName: name });
 
                                 return (
                                     <ServiceCard
                                         key={id || `${name}-${idx}`}
                                         name={name}
-                                        description="Block destinations that belong to this service (by ASN)."
+                                        description={`Block ${name} service and all its domains.`}
                                         asnsLabel={asnsLabel}
+                                        asnsTitle={asnsTitle}
+                                        logoSrc={logoSrc}
                                         onSwitchChange={(checked) => handleServiceSwitch(id, checked)}
                                         switchChecked={isBlocked}
                                         switchDisabled={updating === id || !id}

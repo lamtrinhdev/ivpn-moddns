@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 import ServicesContentSection from "@/pages/blocklists/ServicesContentSection";
 import { useAppStore } from "@/store/general";
+import type { ModelProfile } from "@/api/client/api";
 
 const {
     servicesGetMock,
@@ -61,7 +62,7 @@ const makeProfile = (blocked: string[] = []) =>
                 services: { blocked },
             },
         },
-    }) as any;
+    }) as unknown as ModelProfile;
 
 describe("ServicesContentSection", () => {
     beforeEach(() => {
@@ -78,7 +79,7 @@ describe("ServicesContentSection", () => {
                     {
                         id: "google",
                         name: "Google",
-                        asns: [15169],
+                        asns: [1, 2, 3, 4, 5, 6],
                     },
                 ],
             },
@@ -101,6 +102,12 @@ describe("ServicesContentSection", () => {
         render(<ServicesContentSection />);
 
         await screen.findByText("Google");
+
+        expect(screen.getByRole("img", { name: /google logo/i })).toBeInTheDocument();
+
+        const asnsEl = screen.getByTestId("service-asns");
+        expect(asnsEl).toHaveTextContent("ASNs: 1, 2, 3, 4, 5 +1");
+        expect(asnsEl).toHaveAttribute("title", "ASNs: 1, 2, 3, 4, 5, 6");
 
         const switchEl = screen.getByRole("switch");
         expect(switchEl).toHaveAttribute("aria-checked", "false");

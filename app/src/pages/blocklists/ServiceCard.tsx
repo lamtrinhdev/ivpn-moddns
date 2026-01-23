@@ -6,6 +6,9 @@ interface ServiceCardProps {
     name: string;
     description: string;
     asnsLabel: string;
+    asnsTitle?: string;
+    logoSrc?: string;
+    logoAlt?: string;
     onSwitchChange?: (checked: boolean) => void;
     switchChecked?: boolean;
     switchDisabled?: boolean;
@@ -15,6 +18,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
     name,
     description,
     asnsLabel,
+    asnsTitle,
+    logoSrc,
+    logoAlt,
     onSwitchChange,
     switchChecked,
     switchDisabled,
@@ -27,8 +33,19 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             <CardContent className="p-0 flex flex-col justify-between h-full">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-start justify-between gap-2">
-                        <div className="text-tailwind-colors-slate-50 font-semibold text-base leading-tight max-w-[70%] md:max-w-[75%] lg:max-w-[80%] truncate break-words">
-                            {name}
+                        <div className="flex items-start gap-2 min-w-0 max-w-[70%] md:max-w-[75%] lg:max-w-[80%]">
+                            {logoSrc ? (
+                                <img
+                                    data-testid="service-logo"
+                                    src={logoSrc}
+                                    alt={logoAlt ?? `${name} logo`}
+                                    loading="lazy"
+                                    className="h-5 w-5 mt-0.5 shrink-0"
+                                />
+                            ) : null}
+                            <div className="text-tailwind-colors-slate-50 font-semibold text-base leading-tight truncate break-words">
+                                {name}
+                            </div>
                         </div>
                         <Switch
                             checked={switchChecked}
@@ -48,7 +65,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                     </div>
                 </div>
                 <div className="mt-4 flex items-center justify-end text-xs text-[var(--tailwind-colors-slate-200)] min-w-0">
-                    <span className="truncate" title={asnsLabel}>
+                    <span
+                        data-testid="service-asns"
+                        className="truncate"
+                        title={asnsTitle ?? asnsLabel}
+                    >
                         {asnsLabel}
                     </span>
                 </div>
