@@ -20,6 +20,9 @@ type Loader struct {
 }
 
 func New(path string, reloadEvery time.Duration) *Loader {
+	if path == "" {
+		return nil
+	}
 	if reloadEvery <= 0 {
 		reloadEvery = 5 * time.Minute
 	}
@@ -49,18 +52,25 @@ func (l *Loader) Reload() error {
 	if l == nil {
 		return nil
 	}
+
 	cat, err := servicescatalog.LoadFromFile(l.path)
+
 	l.mu.Lock()
-	defer l.mu.Unlock()
 	l.lastLoad = time.Now()
 	l.lastErr = err
 	if err == nil {
+		// Keep the last known-good catalog if reload fails.
 		l.catalog = cat
-		log.Info().Str("path", l.path).Int("services", len(cat.Services)).Msg("Services catalog loaded")
-	} else {
-		log.Error().Err(err).Str("path", l.path).Msg("Failed to load services catalog")
 	}
-	return err
+	l.mu.Unlock()
+
+	if err != nil {
+		log.Error().Err(err).Str("path", l.path).Msg("Failed to load services catalog")
+		return err
+	}
+
+	log.Debug().Str("path", l.path).Int("services", len(cat.Services)).Msg("Services catalog loaded")
+	return nil
 }
 
 func (l *Loader) Get() (*servicescatalog.Catalog, error) {

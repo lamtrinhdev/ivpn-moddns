@@ -193,7 +193,7 @@ func New() (*Config, error) {
 
 	servicesCatalogPath := os.Getenv("SERVICES_CATALOG_PATH")
 	if servicesCatalogPath == "" {
-		servicesCatalogPath = "./services/catalog.yml"
+		servicesCatalogPath = "/opt/services/catalog.yml"
 	}
 	servicesCatalogReloadEveryStr := os.Getenv("SERVICES_CATALOG_RELOAD")
 	if servicesCatalogReloadEveryStr == "" {

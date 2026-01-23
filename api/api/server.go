@@ -18,9 +18,9 @@ import (
 	"github.com/ivpn/dns/api/internal/email"
 	"github.com/ivpn/dns/api/internal/idgen"
 	"github.com/ivpn/dns/api/internal/middleware"
-	"github.com/ivpn/dns/api/internal/servicescatalogcache"
 	"github.com/ivpn/dns/api/internal/validator"
 	"github.com/ivpn/dns/api/service"
+	"github.com/ivpn/dns/libs/servicescatalogcache"
 	"github.com/ivpn/dns/libs/urlshort"
 )
 
