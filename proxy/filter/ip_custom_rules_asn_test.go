@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestIPFilter_AllowByASNShouldOverrideBlock_CustomRules(t *testing.T) {
+func TestIPFilter_BlockWinsOnConflict_CustomRules_ASN(t *testing.T) {
 	const profileID = "test-profile-asn"
 	const allowASN = uint(15169)
 
@@ -60,7 +60,7 @@ func TestIPFilter_AllowByASNShouldOverrideBlock_CustomRules(t *testing.T) {
 
 	err := ipFilter.Execute(reqCtx, dnsCtx)
 	assert.NoError(t, err)
-	assert.Equal(t, model.StatusProcessed, reqCtx.FilterResult.Status)
+	assert.Equal(t, model.StatusBlocked, reqCtx.FilterResult.Status)
 	assert.Contains(t, reqCtx.FilterResult.Reasons, REASON_CUSTOM_RULES)
 }
 

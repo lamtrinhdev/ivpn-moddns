@@ -111,6 +111,7 @@ func (f *DomainFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, 
 	fqdn, _ := strings.CutSuffix(question, ".")
 
 	result := &model.StageResult{Decision: model.DecisionNone, Tier: TierCustomRules}
+	allowMatched := false
 
 	for _, customRuleHash := range customRuleHashes {
 		hash, err := f.Cache.GetCustomRulesHash(context.Background(), customRuleHash)
@@ -137,11 +138,15 @@ func (f *DomainFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, 
 					Str("reason", REASON_CUSTOM_RULES).
 					Str("pattern", hash["value"]).
 					Msgf("Allowing domain: %s", question)
-				result.Decision = model.DecisionAllow
-				result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
-				return result, nil
+				allowMatched = true
 			}
 		}
+	}
+
+	if allowMatched {
+		result.Decision = model.DecisionAllow
+		result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+		return result, nil
 	}
 
 	return result, nil
@@ -202,13 +207,13 @@ func (f *IPFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, dctx
 
 	}
 
-	if allowMatched {
-		result.Decision = model.DecisionAllow
+	if blockMatched {
+		result.Decision = model.DecisionBlock
 		result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
 		return result, nil
 	}
-	if blockMatched {
-		result.Decision = model.DecisionBlock
+	if allowMatched {
+		result.Decision = model.DecisionAllow
 		result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
 		return result, nil
 	}

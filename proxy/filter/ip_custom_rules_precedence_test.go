@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestIPFilter_AllowByIPShouldOverrideBlock_CustomRules(t *testing.T) {
+func TestIPFilter_BlockWinsOnConflict_CustomRules_IP(t *testing.T) {
 	const profileID = "test-profile"
 
 	allowIP := "1.1.1.1"
@@ -72,8 +72,6 @@ func TestIPFilter_AllowByIPShouldOverrideBlock_CustomRules(t *testing.T) {
 	err := ipFilter.Execute(reqCtx, dnsCtx)
 	assert.NoError(t, err)
 
-	// Expected behavior: allow-by-IP should win and final status should be processed.
-	// Current behavior: any matched block rule makes the single FilterResult blocked,
-	// and the final status becomes blocked.
-	assert.Equal(t, model.StatusProcessed, reqCtx.FilterResult.Status)
+	// When both allow and block custom rules match within a single response, block wins.
+	assert.Equal(t, model.StatusBlocked, reqCtx.FilterResult.Status)
 }
