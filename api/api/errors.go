@@ -51,7 +51,7 @@ var (
 	ErrDisableTotpSuccess         = errors.New("2FA is disabled")
 	// ErrTotpRequired                 = errors.New("TOTP is required")
 	ErrInvalidTotpCode              = errors.New("invalid 2FA code")
-	ErrInvalidCustomRuleSyntax      = errors.New("the rule needs to be a valid domain name, IPv4 or IPv6 address")
+	ErrInvalidCustomRuleSyntax      = errors.New("the rule needs to be a valid domain name, IPv4 or IPv6 address, or ASN")
 	ErrFailedToGenerateMobileConfig = errors.New("failed to generate .mobileconfig")
 	ErrGetSession                   = errors.New("could not get session")
 	ErrSaveSession                  = errors.New("could not save session")
