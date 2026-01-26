@@ -129,6 +129,7 @@ const QueryLogs = ({ profiles }: QueryLogsProps): JSX.Element => {
     // Fetch logs and then fetch logos for the batch
     useEffect(() => {
         let cancelled = false;
+        let fadeInTimeout: ReturnType<typeof setTimeout> | undefined;
         const fetchLogs = async () => {
             // Don't fetch if no active profile
             if (!activeProfile?.profile_id) {
@@ -178,7 +179,7 @@ const QueryLogs = ({ profiles }: QueryLogsProps): JSX.Element => {
 
                     // Trigger fade-in animation with a delay to ensure content is rendered
                     if (page === 1) {
-                        setTimeout(() => {
+                        fadeInTimeout = setTimeout(() => {
                             setFadeClass('opacity-100 transition-opacity duration-200 ease-in');
                         }, 100);
                     }
@@ -215,6 +216,7 @@ const QueryLogs = ({ profiles }: QueryLogsProps): JSX.Element => {
         fetchLogs();
         return () => {
             cancelled = true;
+            if (fadeInTimeout) clearTimeout(fadeInTimeout);
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- committedSearchValue, isAutoRefreshing, and sortValue are consumed via the `filters` object and `refreshTrigger`; adding them directly would cause redundant re-fetches since the filters object already captures their derived values
     }, [page, filters.Limit, filters.Status, filters.Timespan.Value, filters.Search, filters.Sort, activeProfile, refreshTrigger, deviceIdValue]);
