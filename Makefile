@@ -102,7 +102,23 @@ down_dev: ## Stops the development services.
 	-f compose.yml \
 	-f compose.sdns.yml \
 	-f compose.unbound.yml \
-	down
+	down --remove-orphans --timeout 10
+
+restart_dev: ## Restarts development services (down + up with proper wait).
+	docker compose \
+	-f compose.dev.yml \
+	-f compose.yml \
+	-f compose.sdns.yml \
+	-f compose.unbound.yml \
+	down --remove-orphans --timeout 10
+	@echo "Waiting for network resources to be released..."
+	@sleep 2
+	docker compose \
+		-f compose.yml \
+		-f compose.dev.yml \
+		-f compose.unbound.yml \
+		-f compose.sdns.yml \
+		up -d
 
 IMAGE?=dnsapi
 build_api_image: ## Builds the DNS REST API image.

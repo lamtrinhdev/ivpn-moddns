@@ -172,21 +172,18 @@ export default function NavigationSection({ isMobile = false, onClose, offsetLef
 
                     {/* Logo for desktop */}
                     {!isMobile && (
-                        <div
-                            className={`flex items-center cursor-pointer min-h-10 rounded-md px-2 py-2 transition-colors hover:bg-[var(--sidebar-muted)] ${showLabels ? "w-full gap-2.5 justify-start" : "justify-center"} ${collapsed ? "px-0" : "px-4"}`}
-                            onClick={() => navigate("/home")}
-                        >
-                            {/* Use theme-aware logo */}
-                            <img
-                                className={logoSize}
-                                alt="modDNS logo"
-                                src={(() => {
-                                    if (collapsed) {
-                                        return isDarkMode ? modDNSLogoCollapsedWhite : modDNSLogoCollapsedBlack;
-                                    }
-                                    return isDarkMode ? modDNSLogoDarkTheme : modDNSLogoLightTheme;
-                                })()}
-                            />
+                        <div className={`flex ${collapsed ? "flex-col items-center gap-2" : "items-center"} ${collapsed ? "px-0" : "px-2"}`}>
+                            <div
+                                className={`flex items-center cursor-pointer min-h-10 rounded-md px-2 py-2 transition-colors hover:bg-[var(--sidebar-muted)] ${showLabels ? "gap-2.5" : "justify-center"}`}
+                                onClick={() => navigate("/home")}
+                            >
+                                {/* Use theme-aware logo */}
+                                <img
+                                    className={logoSize}
+                                    alt="modDNS logo"
+                                    src={collapsed ? (isDarkMode ? modDNSLogoCollapsedWhite : modDNSLogoCollapsedBlack) : (isDarkMode ? modDNSLogoDarkTheme : modDNSLogoLightTheme)}
+                                />
+                            </div>
                         </div>
                     )}
 
@@ -215,29 +212,6 @@ export default function NavigationSection({ isMobile = false, onClose, offsetLef
 
                 {/* Support Section */}
                 <div className={`flex flex-col gap-2 ${isMobile ? 'px-2 border-t border-[var(--sidebar-border)] pt-4' : 'mb-4'}`}>
-                    {/* Theme Toggle */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`flex ${isMobile ? 'h-10 w-10' : 'h-8 w-8'} rounded-md transition-colors text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-muted)] ${!isMobile && collapsed ? "mx-auto" : "ml-2"}`}
-                        title={`Theme: ${getThemeLabel()}`}
-                        onClick={toggleTheme}
-                    >
-                        {getThemeIcon()}
-                    </Button>
-
-                    {/* Horizontal line above FAQ */}
-                    {showLabels && (
-                        <div className="px-4 py-1">
-                            <div className="h-px bg-[var(--sidebar-border)] w-full" />
-                        </div>
-                    )}
-                    {!showLabels && !isMobile && (
-                        <div className="px-2 py-1">
-                            <div className="h-px bg-[var(--sidebar-border)] w-full" />
-                        </div>
-                    )}
-
                     {/* FAQ */}
                     <Button
                         variant="ghost"
@@ -284,11 +258,11 @@ export default function NavigationSection({ isMobile = false, onClose, offsetLef
                     </div>
                 )} */}
 
-                {/* Logout Button */}
-                <div className={`relative ${isMobile ? 'px-2 pt-4' : ''}`}>
+                {/* Logout Button and Theme Toggle */}
+                <div className={`relative flex items-center gap-2 ${isMobile ? 'px-2 pt-4' : ''}`}>
                     <Button
                         variant="ghost"
-                        className={`flex ${isMobile ? 'min-h-12' : 'min-h-10'} w-full gap-2 rounded-md px-2 py-2 transition-colors text-[var(--sidebar-foreground)] hover:bg-[var(--destructive)]/10 ${!isMobile && collapsed ? "justify-center px-0" : "justify-start px-4"}`}
+                        className={`flex ${isMobile ? 'min-h-12' : 'min-h-10'} flex-1 gap-2 rounded-md px-2 py-2 transition-colors text-[var(--sidebar-foreground)] hover:bg-[var(--destructive)]/10 ${!isMobile && collapsed ? "justify-center px-0" : "justify-start px-4"}`}
                         title={!isMobile && collapsed ? "Logout" : undefined}
                         data-testid="btn-nav-logout"
                         onClick={() => setShowLogoutDialog(true)}
@@ -302,6 +276,16 @@ export default function NavigationSection({ isMobile = false, onClose, offsetLef
                                 Log out
                             </span>
                         )}
+                    </Button>
+                    {/* Theme Toggle */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`${isMobile ? 'h-12 w-12' : 'h-10 w-10'} rounded-md transition-colors text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-muted)] flex-shrink-0`}
+                        title={`Theme: ${getThemeLabel()}`}
+                        onClick={toggleTheme}
+                    >
+                        {getThemeIcon()}
                     </Button>
                 </div>
             </div>
