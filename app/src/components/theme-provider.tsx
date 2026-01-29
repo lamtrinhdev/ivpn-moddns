@@ -35,12 +35,16 @@ export function ThemeProvider({
         const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
 
         const applyTheme = () => {
-            root.classList.remove("light", "dark")
-
             const effectiveTheme: "dark" | "light" = theme === "system"
                 ? (mediaQuery.matches ? "dark" : "light")
                 : theme
 
+            // Only remove the opposite class to avoid flash when :root:not(.dark) briefly matches
+            if (effectiveTheme === "dark") {
+                root.classList.remove("light")
+            } else {
+                root.classList.remove("dark")
+            }
             root.classList.add(effectiveTheme)
 
             // Also set the data-shadcn-ui-mode attribute for CSS variable overrides

@@ -93,7 +93,7 @@ button:focus-visible {
 @media (prefers-color-scheme: light) {
   :root:not(.dark) {
     color: #213547;
-    background-color: #ffffff;
+    /* background-color handled by --shadcn-ui-app-background CSS variable */
   }
   :root:not(.dark) a:hover {
     color: #747bff;
@@ -138,7 +138,7 @@ button:focus-visible {
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-.dark {
+:root.dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

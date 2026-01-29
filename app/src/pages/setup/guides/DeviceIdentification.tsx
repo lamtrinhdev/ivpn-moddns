@@ -28,7 +28,7 @@ export const createDeviceIdentificationSteps = (profileId = "your-profile-id", d
                     {dnsOverHTTPS}
                 </div>
                 <p>With device name:</p>
-                <div className="bg-background rounded p-3 font-mono text-xs text-[var(--tailwind-colors-rdns-500)]">
+                <div className="bg-background rounded p-3 font-mono text-xs text-[var(--tailwind-colors-slate-50)]">
                     {dnsOverHTTPS}/my-laptop<br />
                     {dnsOverHTTPS}/phone<br />
                     {dnsOverHTTPS}/John%27s%20iPhone
@@ -54,7 +54,7 @@ export const createDeviceIdentificationSteps = (profileId = "your-profile-id", d
                     {profileId}.{domain}
                 </div>
                 <p>With device name:</p>
-                <div className="bg-background rounded p-3 font-mono text-xs text-[var(--tailwind-colors-rdns-500)]">
+                <div className="bg-background rounded p-3 font-mono text-xs text-[var(--tailwind-colors-slate-50)]">
                     my-laptop-{profileId}.{domain}<br />
                     home--router-{profileId}.{domain}<br />
                     john--s--iphone-{profileId}.{domain}

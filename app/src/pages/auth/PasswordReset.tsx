@@ -59,7 +59,7 @@ export default function PasswordReset(): JSX.Element {
     };
 
     return (
-        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--shadcn-ui-app-background)]">
+        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--public-page-background)]">
             {/* Main content area - centered vertically and horizontally */}
             <div className="flex-1 flex items-center justify-center safe-px py-8">
                 <div className="flex flex-col auth-shell items-center gap-4 px-4 sm:px-0">
@@ -95,11 +95,11 @@ export default function PasswordReset(): JSX.Element {
                                         <form className="flex flex-col items-start gap-8 w-full" onSubmit={handleReset}>
                                             <div className="flex flex-col items-start gap-4 w-full">
                                                 <div className="relative w-full">
-                                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--shadcn-ui-app-muted-foreground)]" />
+                                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)]" />
                                                     <Input
                                                         type="email"
                                                         placeholder="Email address"
-                                                        className="pl-10 bg-[var(--shadcn-ui-app-background)] text-[var(--shadcn-ui-app-muted-foreground)] border-0 rounded-[var(--primitives-radius-radius-md)] h-auto py-2.5 font-normal text-sm"
+                                                        className="pl-10 bg-[var(--shadcn-ui-app-muted)] focus:bg-[var(--tailwind-colors-slate-700)] border border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
                                                         value={email}
                                                         onChange={e => setEmail(e.target.value)}
                                                         required

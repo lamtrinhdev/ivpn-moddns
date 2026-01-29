@@ -192,7 +192,7 @@ export default function Setup({ profiles: _ }: SetupProps): JSX.Element {
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="icon"
-                                                                            className="p-0.5 h-auto bg-card text-[var(--tailwind-colors-rdns-600)] rounded-md hover:bg-[var(--tailwind-colors-rdns-600)] hover:text-primary-foreground"
+                                                                            className="p-0.5 h-auto bg-[var(--shadcn-ui-app-card)] text-[var(--tailwind-colors-rdns-600)] rounded-md hover:bg-[var(--tailwind-colors-rdns-600)] hover:text-primary-foreground"
                                                                             onClick={(e) => { e.stopPropagation(); copyToClipboard(value as string, label); }}
                                                                             disabled={copiedField === label}
                                                                             aria-label={`Copy ${label}`}
@@ -259,13 +259,13 @@ export default function Setup({ profiles: _ }: SetupProps): JSX.Element {
                                                     </div>
                                                     <div className="flex-1">
                                                         <h3 className={`text-sm font-semibold transition-all duration-300 ${selectedPlatform === 'Device Identification'
-                                                            ? 'text-white font-bold'
+                                                            ? 'text-[var(--shadcn-ui-app-background)] font-bold'
                                                             : 'text-[var(--shadcn-ui-app-foreground)]'
                                                             }`}>
                                                             Device Identification
                                                         </h3>
                                                         <p className={`text-xs transition-all duration-300 ${selectedPlatform === 'Device Identification'
-                                                            ? 'text-white/80'
+                                                            ? 'text-[var(--shadcn-ui-app-background)] opacity-80'
                                                             : 'text-[var(--shadcn-ui-app-muted-foreground)]'
                                                             }`}>
                                                             Optional: Identify specific devices in your logs
@@ -318,13 +318,13 @@ export default function Setup({ profiles: _ }: SetupProps): JSX.Element {
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h3 className={`text-sm font-semibold transition-all duration-300 ${selectedPlatform === 'Device Identification'
-                                                            ? 'text-white font-bold'
+                                                            ? 'text-[var(--shadcn-ui-app-background)] font-bold'
                                                             : 'text-[var(--shadcn-ui-app-foreground)]'
                                                             }`}>
                                                             Device Identification
                                                         </h3>
                                                         <p className={`text-xs transition-all duration-300 ${selectedPlatform === 'Device Identification'
-                                                            ? 'text-white/80'
+                                                            ? 'text-[var(--shadcn-ui-app-background)] opacity-80'
                                                             : 'text-[var(--shadcn-ui-app-muted-foreground)]'
                                                             }`}>
                                                             Optional: Identify specific devices in your logs

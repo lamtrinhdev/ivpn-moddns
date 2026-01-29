@@ -32,7 +32,7 @@ input:-webkit-autofill:active {
 .dark input:-webkit-autofill:hover,
 .dark input:-webkit-autofill:focus,
 .dark input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px var(--shadcn-ui-app-background) inset !important;
+    -webkit-box-shadow: 0 0 0 30px var(--tailwind-colors-slate-700) inset !important;
     -webkit-text-fill-color: var(--tailwind-colors-slate-50) !important;
     caret-color: var(--tailwind-colors-slate-50) !important;
 }
@@ -141,7 +141,7 @@ textarea::selection {
 
     /* Sidebar colors - DEFAULT (dark mode) */
     /* These get overridden in light mode section */
-    --sidebar-background: rgba(17, 21, 20, 1);
+    --sidebar-background: var(--shadcn-ui-app-background);
     --sidebar-foreground: rgba(235, 238, 238, 1);
     --sidebar-border: rgba(52, 60, 59, 1);
     --sidebar-muted: rgba(33, 33, 33, 1);
@@ -153,6 +153,7 @@ textarea::selection {
     /* ===== DEFAULT THEME (Dark mode) ===== */
     /* App semantic colors - Dark mode as default */
     --shadcn-ui-app-background: var(--tailwind-colors-slate-950);
+    --public-page-background: var(--shadcn-ui-app-background);
     --shadcn-ui-app-border: var(--tailwind-colors-slate-600);
     --shadcn-ui-app-foreground: var(--tailwind-colors-slate-50);
     --shadcn-ui-app-muted: var(--tailwind-colors-slate-800);
@@ -283,6 +284,7 @@ You can apply the theme on any DOM node, not just the `body`
     /* App semantic colors - Light mode */
     /* Page background is WHITE, cards/sidebar are light gray */
     --shadcn-ui-app-background: var(--tailwind-colors-base-white);
+    --public-page-background: #EBEEEE;
     --shadcn-ui-app-border: var(--tailwind-colors-slate-light-200);
     --shadcn-ui-app-foreground: var(--tailwind-colors-slate-light-900);
     --shadcn-ui-app-muted: var(--tailwind-colors-slate-light-200);
@@ -313,7 +315,7 @@ You can apply the theme on any DOM node, not just the `body`
     --tailwind-colors-slate-950: var(--tailwind-colors-base-white);
 
     /* Sidebar colors - Light mode (white sidebar with dark text) */
-    --sidebar-background: var(--tailwind-colors-base-white);
+    --sidebar-background: var(--shadcn-ui-app-background);
     --sidebar-foreground: var(--tailwind-colors-slate-light-800);
     --sidebar-border: var(--tailwind-colors-slate-light-200);
     --sidebar-muted: var(--tailwind-colors-slate-light-100);
@@ -335,31 +337,32 @@ You can apply the theme on any DOM node, not just the `body`
 }
 
 /* Dark mode - uses dark backgrounds with light text */
+/* Using :root.dark for higher specificity to override :root:not(.dark) */
 [data-shadcn-ui-mode="dark-emerald"],
-.dark {
-    /* App semantic colors - Dark mode */
-    --shadcn-ui-app-background: rgba(17, 21, 20, 1);
-    --shadcn-ui-app-border: rgba(52, 60, 59, 1);
-    --shadcn-ui-app-foreground: rgba(235, 238, 238, 1);
-    --shadcn-ui-app-muted: rgba(33, 33, 33, 1);
-    --shadcn-ui-app-muted-foreground: rgba(100, 116, 139, 1);
-    --shadcn-ui-app-popover: rgba(17, 21, 20, 1);
-    --shadcn-ui-app-secondary: rgba(33, 33, 33, 1);
-    --shadcn-ui-app-secondary-foreground: rgba(235, 238, 238, 1);
-    --shadcn-ui-app-card: rgba(23, 27, 26, 1);
+:root.dark {
+    /* App semantic colors - Dark mode (reverted to pre-4d1853fe values) */
+    --shadcn-ui-app-background: rgba(17, 17, 17, 1);  /* #111111 */
+    --public-page-background: var(--shadcn-ui-app-background);
+    --sidebar-background: var(--shadcn-ui-app-background);
+    --shadcn-ui-app-border: var(--tailwind-colors-slate-600);
+    --shadcn-ui-app-foreground: var(--tailwind-colors-slate-50);
+    --shadcn-ui-app-muted: var(--tailwind-colors-slate-800);
+    --shadcn-ui-app-muted-foreground: var(--tailwind-colors-slate-400);
+    --shadcn-ui-app-popover: var(--tailwind-colors-slate-950);
+    --shadcn-ui-app-secondary: var(--tailwind-colors-slate-800);
+    --shadcn-ui-app-secondary-foreground: var(--tailwind-colors-slate-50);
 
     /* Variable Collection - Dark mode */
-    --variable-collection-surface: rgba(23, 27, 26, 1);
-    --variable-collection-card: rgba(23, 27, 26, 1);
-    --variable-collection-surface-foreground: rgba(235, 238, 238, 1);
+    --variable-collection-surface: rgba(21, 21, 21, 1);
+    --variable-collection-card: rgba(24, 24, 24, 1);
+    --variable-collection-surface-foreground: rgba(20, 50, 47, 1);
 
-    /* Slate colors - Dark mode (original values) */
+    /* Slate colors - Dark mode (reverted to pre-4d1853fe values) */
     --tailwind-colors-slate-50: rgba(235, 238, 238, 1);
-    --tailwind-colors-slate-100: rgba(203, 213, 225, 1);
-    --tailwind-colors-slate-200: rgba(148, 163, 184, 1);
-    --tailwind-colors-slate-300: rgba(148, 163, 184, 1);
-    --tailwind-colors-slate-400: rgba(100, 116, 139, 1);
-    --tailwind-colors-slate-500: rgba(71, 85, 105, 1);
+    --tailwind-colors-slate-100: rgba(168, 182, 180, 1);  /* OLD value */
+    --tailwind-colors-slate-200: rgba(107, 127, 124, 1);  /* OLD value */
+    --tailwind-colors-slate-400: rgba(87, 99, 97, 1);     /* OLD value */
+    --tailwind-colors-slate-500: rgba(64, 74, 72, 1);     /* OLD value */
     --tailwind-colors-slate-600: rgba(52, 60, 59, 1);
     --tailwind-colors-slate-700: rgba(44, 50, 49, 1);
     --tailwind-colors-slate-800: rgba(33, 33, 33, 1);
@@ -434,7 +437,7 @@ You can apply the theme on any DOM node, not just the `body`
         --border: 216 34% 17%;
         --input: 216 34% 17%;
 
-        --card: 220 13% 10%;
+        --card: transparent;  /* reverted to OLD value */
         --card-foreground: 213 31% 91%;
 
         --primary: 210 40% 98%;
@@ -456,8 +459,9 @@ You can apply the theme on any DOM node, not just the `body`
     }
 
     body {
-        @apply bg-background text-foreground;
+        @apply text-foreground;
         font-feature-settings: "rlig" 1, "calt" 1;
+        /* Background handled by early inline styles in index.html to prevent flash */
     }
 }
 

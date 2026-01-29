@@ -34,9 +34,13 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ value, accent = false, cla
     // Reserve space for the copy button so it never overlaps content.
     const copyPadding = hideCopy ? '' : (inline ? 'pr-7' : 'pr-10');
 
+    const textColor = accent
+        ? 'text-[var(--tailwind-colors-rdns-500)] [:root:not(.dark)_&]:text-[var(--tailwind-colors-slate-light-900)]'
+        : 'text-[var(--tailwind-colors-slate-50)]';
+
     const baseClasses = inline
-        ? `relative inline-flex items-center px-2 py-1 ${copyPadding} rounded border border-[var(--tailwind-colors-slate-700)] bg-[var(--tailwind-colors-slate-900)] font-mono text-xs ${accent ? 'text-[var(--tailwind-colors-rdns-500)]' : 'text-[var(--tailwind-colors-slate-50)]'} ${noWrap ? 'whitespace-nowrap' : 'break-all'} ${className}`
-        : `relative mt-2 rounded border border-[var(--tailwind-colors-slate-700)] bg-[var(--tailwind-colors-slate-900)] p-2 ${copyPadding || 'pr-10'} font-mono text-xs ${noWrap ? 'whitespace-nowrap overflow-x-auto' : 'break-all'} ${accent ? 'text-[var(--tailwind-colors-rdns-500)]' : 'text-[var(--tailwind-colors-slate-50)]'} ${className}`;
+        ? `relative inline-flex items-center px-2 py-1 ${copyPadding} rounded border border-[var(--tailwind-colors-slate-700)] bg-[var(--tailwind-colors-slate-900)] font-mono text-xs ${textColor} ${noWrap ? 'whitespace-nowrap' : 'break-all'} ${className}`
+        : `relative mt-2 rounded border border-[var(--tailwind-colors-slate-700)] bg-[var(--tailwind-colors-slate-900)] p-2 ${copyPadding || 'pr-10'} font-mono text-xs ${noWrap ? 'whitespace-nowrap overflow-x-auto' : 'break-all'} ${textColor} ${className}`;
 
     return (
         <div className={baseClasses}>

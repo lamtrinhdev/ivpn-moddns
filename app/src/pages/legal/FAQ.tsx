@@ -529,7 +529,7 @@ export default function FAQ(): JSX.Element {
 
     // Standalone layout (not logged in)
     return (
-        <div className="relative min-h-screen w-full overflow-x-hidden bg-[var(--shadcn-ui-app-background)]">
+        <div className="relative min-h-screen w-full overflow-x-hidden bg-[var(--public-page-background)]">
             <div className="relative z-10 py-8">
                 <div className="w-full max-w-4xl mx-auto p-8">
                     <div className="mb-6">

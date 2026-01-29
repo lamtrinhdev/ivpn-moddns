@@ -7,7 +7,7 @@ export default function NotFound() {
     const navigate = useNavigate();
 
     return (
-        <div className="bg-background relative w-screen min-h-screen overflow-hidden flex items-center justify-center">
+        <div className="bg-[var(--public-page-background)] relative w-screen min-h-screen overflow-hidden flex items-center justify-center">
             <Card className="w-full max-w-md p-8 bg-[var(--variable-collection-surface)] border-[var(--shadcn-ui-app-border)] relative z-10">
                 <div className="flex flex-col items-center text-center space-y-6">
                     {/* 404 Text */}

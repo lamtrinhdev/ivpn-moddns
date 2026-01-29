@@ -262,7 +262,7 @@ export default function NavigationSection({ isMobile = false, onClose, offsetLef
                 <div className={`relative flex items-center gap-2 ${isMobile ? 'px-2 pt-4' : ''}`}>
                     <Button
                         variant="ghost"
-                        className={`flex ${isMobile ? 'min-h-12' : 'min-h-10'} flex-1 gap-2 rounded-md px-2 py-2 transition-colors text-[var(--sidebar-foreground)] hover:bg-[var(--destructive)]/10 ${!isMobile && collapsed ? "justify-center px-0" : "justify-start px-4"}`}
+                        className={`flex ${isMobile ? 'min-h-12' : 'min-h-10'} flex-1 gap-2 rounded-md px-2 py-2 transition-colors text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-muted)] ${!isMobile && collapsed ? "justify-center px-0" : "justify-start px-4"}`}
                         title={!isMobile && collapsed ? "Logout" : undefined}
                         data-testid="btn-nav-logout"
                         onClick={() => setShowLogoutDialog(true)}

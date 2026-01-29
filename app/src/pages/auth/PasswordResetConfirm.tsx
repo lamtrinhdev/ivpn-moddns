@@ -92,7 +92,7 @@ export default function PasswordResetConfirm(): JSX.Element {
     };
 
     return (
-        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--shadcn-ui-app-background)]">
+        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--public-page-background)]">
             {/* Main content area - centered vertically and horizontally */}
             <div className="flex-1 flex items-center justify-center safe-px py-8">
                 <div className="flex flex-col auth-shell items-center gap-4 px-4 sm:px-0">

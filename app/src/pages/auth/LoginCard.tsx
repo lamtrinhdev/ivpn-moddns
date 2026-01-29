@@ -45,7 +45,7 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
     };
 
     return (
-        <Card className="flex flex-col items-center gap-[33px] p-11 bg-white dark:bg-[var(--shadcn-ui-app-popover)] rounded-[var(--primitives-radius-radius-md)] border border-solid border-[var(--shadcn-ui-app-border)] shadow-sm w-full">
+        <Card className="flex flex-col items-center gap-[33px] p-11 bg-[var(--shadcn-ui-app-popover)] rounded-[var(--primitives-radius-radius-md)] border border-solid border-[var(--shadcn-ui-app-border)] shadow-sm w-full">
             <CardContent className="flex flex-col items-center gap-8 w-full p-0">
                 {/* Logo and Description */}
                 <div className="flex flex-col items-center w-full">
@@ -60,13 +60,13 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                     </div>
 
                     <div className="text-center max-w-[316px]">
-                        <span className="text-[var(--tailwind-colors-slate-light-600)] dark:text-[var(--shadcn-ui-app-muted-foreground)] font-normal text-sm leading-7">
+                        <span className="text-[var(--shadcn-ui-app-muted-foreground)] font-normal text-sm leading-7">
                             The{" "}
                         </span>
-                        <span className="font-semibold text-[var(--tailwind-colors-slate-light-800)] dark:text-[var(--shadcn-ui-app-foreground)] text-sm leading-7">
+                        <span className="font-semibold text-[var(--shadcn-ui-app-foreground)] text-sm leading-7">
                             privacy-first
                         </span>
-                        <span className="text-[var(--tailwind-colors-slate-light-600)] dark:text-[var(--shadcn-ui-app-muted-foreground)] font-normal text-sm leading-7">
+                        <span className="text-[var(--shadcn-ui-app-muted-foreground)] font-normal text-sm leading-7">
                             {" "}
                             DNS resolver in beta, developed by the team behind IVPN.
                         </span>
@@ -80,14 +80,14 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                             /* Passkey Authentication */
                             <form data-testid="login-passkey-form" onSubmit={handlePasskeySubmit} className="flex flex-col items-start gap-4 w-full">
                                 <div className="relative w-full">
-                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)] dark:text-[var(--tailwind-colors-slate-500)]" />
+                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)]" />
                                     <Input
                                         data-testid="input-email-passkey"
                                         type="email"
                                         placeholder="Email address"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-10 bg-[var(--tailwind-colors-slate-light-100)] dark:bg-[var(--shadcn-ui-app-background)] border border-[var(--tailwind-colors-slate-light-200)] dark:border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
+                                        className="pl-10 bg-[var(--shadcn-ui-app-muted)] focus:bg-[var(--tailwind-colors-slate-700)] border border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
                                         disabled={loading}
                                         required
                                     />
@@ -96,7 +96,7 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                                 <Button
                                     data-testid="btn-login-passkey-submit"
                                     type="submit"
-                                    className="w-full bg-[var(--tailwind-colors-rdns-600)] hover:bg-[var(--tailwind-colors-rdns-700)] text-white font-medium text-sm rounded-md h-auto py-2.5 min-h-11 lg:min-h-0"
+                                    className="w-full bg-[var(--tailwind-colors-rdns-600)] hover:bg-[var(--tailwind-colors-rdns-700)] text-white dark:text-[var(--shadcn-ui-app-background)] font-medium text-sm rounded-md h-auto py-2.5 min-h-11 lg:min-h-0"
                                     disabled={loading || !email}
                                 >
                                     {loading ? "Authenticating..." : "Login with passkey"}
@@ -106,14 +106,14 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                             /* Password Authentication */
                             <form data-testid="login-password-form" onSubmit={handlePasswordSubmit} className="flex flex-col items-start gap-4 w-full">
                                 <div className="relative w-full">
-                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)] dark:text-[var(--tailwind-colors-slate-500)]" />
+                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)]" />
                                     <Input
                                         data-testid="input-email"
                                         type="email"
                                         placeholder="Email address"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-10 bg-[var(--tailwind-colors-slate-light-100)] dark:bg-[var(--shadcn-ui-app-background)] border border-[var(--tailwind-colors-slate-light-200)] dark:border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
+                                        className="pl-10 bg-[var(--shadcn-ui-app-muted)] focus:bg-[var(--tailwind-colors-slate-700)] border border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
                                         disabled={loading}
                                         required
                                     />
@@ -121,21 +121,21 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
 
                                 <div className="flex flex-col gap-2 w-full">
                                     <div className="relative w-full">
-                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)] dark:text-[var(--tailwind-colors-slate-500)]" />
+                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)]" />
                                         <Input
                                             data-testid="input-password"
                                             type="password"
                                             placeholder="Password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="pl-10 bg-[var(--tailwind-colors-slate-light-100)] dark:bg-[var(--shadcn-ui-app-background)] border border-[var(--tailwind-colors-slate-light-200)] dark:border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
+                                            className="pl-10 bg-[var(--shadcn-ui-app-muted)] focus:bg-[var(--tailwind-colors-slate-700)] border border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
                                             disabled={loading}
                                             required
                                         />
                                     </div>
 
                                     <button
-                                        className="text-xs text-[var(--tailwind-colors-slate-500)] dark:text-[var(--shadcn-ui-app-muted-foreground)] font-medium transition-colors duration-150 hover:text-[var(--tailwind-colors-rdns-600)] self-end inline-flex items-center min-h-11 lg:min-h-0 cursor-pointer"
+                                        className="text-xs text-[var(--shadcn-ui-app-muted-foreground)] font-medium transition-colors duration-150 hover:text-[var(--tailwind-colors-rdns-600)] self-end inline-flex items-center min-h-11 lg:min-h-0 cursor-pointer"
                                         type="button"
                                         onClick={() => navigate("/reset-password")}
                                     >
@@ -146,7 +146,7 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                                 {/* OTP input if 2FA is required */}
                                 {showOtp && (
                                     <div className="relative w-full">
-                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)] dark:text-[var(--tailwind-colors-slate-500)]" />
+                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)]" />
                                         <Input
                                             data-testid="input-otp"
                                             type="text"
@@ -154,7 +154,7 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                                             value={otp}
                                             onChange={(e) => setOtp(e.target.value)}
                                             maxLength={16}
-                                            className="pl-10 bg-[var(--tailwind-colors-slate-light-100)] dark:bg-[var(--shadcn-ui-app-background)] border border-[var(--tailwind-colors-slate-light-200)] dark:border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
+                                            className="pl-10 bg-[var(--shadcn-ui-app-muted)] focus:bg-[var(--tailwind-colors-slate-700)] border border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
                                             disabled={loading}
                                             required
                                         />
@@ -164,21 +164,21 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                                 <Button
                                     data-testid="btn-login-password-submit"
                                     type="submit"
-                                    className="w-full bg-[var(--tailwind-colors-rdns-600)] hover:bg-[var(--tailwind-colors-rdns-700)] text-white font-medium text-sm rounded-md h-auto py-2.5 min-h-11 lg:min-h-0"
+                                    className="w-full bg-[var(--tailwind-colors-rdns-600)] hover:bg-[var(--tailwind-colors-rdns-700)] text-white dark:text-[var(--shadcn-ui-app-background)] font-medium text-sm rounded-md h-auto py-2.5 min-h-11 lg:min-h-0"
                                     disabled={loading || !email || !password}
                                 >
-                                    {loading ? "Signing in..." : "Login"}
+                                    {loading ? "Signing in..." : "Sign in"}
                                 </Button>
                             </form>
                         )}
 
                         {/* Separator */}
                         <div className="relative w-full flex items-center justify-center">
-                            <Separator className="flex-1 bg-[var(--tailwind-colors-slate-light-200)] dark:bg-[var(--shadcn-ui-app-border)]" />
-                            <div className="px-4 bg-white dark:bg-[var(--shadcn-ui-app-popover)] text-[var(--tailwind-colors-slate-400)] font-normal text-sm">
+                            <Separator className="flex-1 bg-[var(--shadcn-ui-app-border)]" />
+                            <div className="px-4 bg-[var(--shadcn-ui-app-popover)] text-[var(--tailwind-colors-slate-400)] font-normal text-sm">
                                 OR
                             </div>
-                            <Separator className="flex-1 bg-[var(--tailwind-colors-slate-light-200)] dark:bg-[var(--shadcn-ui-app-border)]" />
+                            <Separator className="flex-1 bg-[var(--shadcn-ui-app-border)]" />
                         </div>
 
                         {/* Toggle Authentication Method */}
@@ -188,7 +188,7 @@ const LoginCard = ({ onLogin, onPasskeyLogin, loading = false, showOtp = false, 
                                 type="button"
                                 variant="secondary"
                                 onClick={() => setIsPasskeyMode(!isPasskeyMode)}
-                                className="w-full bg-white dark:bg-[var(--shadcn-ui-app-muted)] hover:bg-[var(--tailwind-colors-slate-light-100)] dark:hover:bg-[var(--shadcn-ui-app-accent)] border border-[var(--tailwind-colors-slate-light-300)] dark:border-[var(--shadcn-ui-app-border)] text-[var(--tailwind-colors-rdns-600)] font-medium text-sm rounded-md h-auto py-2.5 min-h-11 lg:min-h-0 transition-colors"
+                                className="w-full bg-[var(--shadcn-ui-app-secondary)] hover:bg-[var(--tailwind-colors-slate-700)] border border-transparent text-[var(--tailwind-colors-rdns-600)] font-medium text-sm rounded-md h-auto py-2.5 min-h-11 lg:min-h-0 transition-colors"
                                 disabled={loading}
                             >
                                 {isPasskeyMode ? "Login with password" : "Login with passkey"}

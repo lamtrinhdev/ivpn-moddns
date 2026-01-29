@@ -131,7 +131,7 @@ const Entry = (): JSX.Element => {
                                         <CardFooter className="p-0">
                                             <Button
                                                 variant="outline"
-                                                className="bg-muted text-[var(--tailwind-colors-rdns-600)] border-[var(--shadcn-ui-app-border)] hover:bg-[var(--tailwind-colors-rdns-600)] hover:text-primary-foreground group-hover:bg-[var(--tailwind-colors-rdns-600)] group-hover:text-primary-foreground cursor-pointer transition-colors duration-300"
+                                                className="bg-muted text-[var(--tailwind-colors-rdns-600)] border-[var(--shadcn-ui-app-border)] hover:bg-[var(--tailwind-colors-rdns-600)] hover:text-primary-foreground group-hover:bg-[var(--tailwind-colors-rdns-600)] group-hover:text-primary-foreground dark:group-hover:text-white cursor-pointer transition-colors duration-300"
                                                 onClick={() => navigate(card.route)}
                                             >
                                                 {card.buttonText}
