@@ -37,6 +37,13 @@ export function ThemeProvider({
     useEffect(() => {
         const root = window.document.documentElement
 
+        // Disable all CSS transitions so the theme switch is instant
+        const style = document.createElement("style")
+        style.appendChild(document.createTextNode(
+            "*, *::before, *::after { transition: none !important; }"
+        ))
+        document.head.appendChild(style)
+
         // Only remove the opposite class to avoid flash when :root:not(.dark) briefly matches
         if (theme === "dark") {
             root.classList.remove("light")
@@ -50,6 +57,14 @@ export function ThemeProvider({
             'data-shadcn-ui-mode',
             theme === 'dark' ? 'dark-emerald' : 'light-emerald'
         )
+
+        // Force reflow so the browser paints with transitions disabled
+        document.body.offsetHeight // eslint-disable-line @typescript-eslint/no-unused-expressions
+
+        // Re-enable transitions on the next frame
+        requestAnimationFrame(() => {
+            document.head.removeChild(style)
+        })
     }, [theme])
 
     const value = {
