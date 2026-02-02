@@ -50,10 +50,6 @@ export default function NavigationSection({ isMobile = false, onClose, offsetLef
         return theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />;
     };
 
-    const getThemeLabel = () => {
-        return theme === 'dark' ? 'Dark' : 'Light';
-    };
-
     // Logout logic
     const handleLogout = async () => {
         setLoading(true);
