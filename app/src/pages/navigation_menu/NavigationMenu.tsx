@@ -62,7 +62,7 @@ export default function NavigationSection({ isMobile = false, onClose, offsetLef
             auth?.logout?.();
             // Call the backend logout endpoint using API client
             await api.Client.authApi.apiV1AccountsLogoutPost();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Logout failed:', err);
         } finally {
             setLoading(false);
