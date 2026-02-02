@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
@@ -99,7 +100,7 @@ func (f *DomainFilter) matchDomain(domain, pattern string) bool {
 }
 
 // filterCustomRules checks if the domain is allowed or blocked by custom rules; method is executed before the DNS request is sent.
-func (f *DomainFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.FilterResult, error) {
+func (f *DomainFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.StageResult, error) {
 	defer sentry.Recover()
 	customRuleHashes, err := f.Cache.GetCustomRulesHashes(context.Background(), reqCtx.ProfileId)
 	if err != nil {
@@ -109,7 +110,8 @@ func (f *DomainFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, 
 	question := dctx.Req.Question[0].Name
 	fqdn, _ := strings.CutSuffix(question, ".")
 
-	var result model.FilterResult = model.FilterResult{Status: model.StatusProcessed}
+	result := &model.StageResult{Decision: model.DecisionNone, Tier: TierCustomRules}
+	allowMatched := false
 
 	for _, customRuleHash := range customRuleHashes {
 		hash, err := f.Cache.GetCustomRulesHash(context.Background(), customRuleHash)
@@ -127,26 +129,31 @@ func (f *DomainFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, 
 					Str("qtype", dns.TypeToString[dctx.Req.Question[0].Qtype]).
 					Str("domain", question).
 					Msg("Domain blocked")
-				result.Status = model.StatusBlocked
+				result.Decision = model.DecisionBlock
 				result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
-				return &result, nil
+				return result, nil
 
 			case ACTION_ALLOW:
 				reqCtx.Logger.Debug().
 					Str("reason", REASON_CUSTOM_RULES).
 					Str("pattern", hash["value"]).
 					Msgf("Allowing domain: %s", question)
-				result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
-				return &result, nil
+				allowMatched = true
 			}
 		}
 	}
 
-	return &result, nil
+	if allowMatched {
+		result.Decision = model.DecisionAllow
+		result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+		return result, nil
+	}
+
+	return result, nil
 }
 
 // filterCustomRules checks if the IP address is allowed or blocked by custom rules; method is executed after the DNS request is sent.
-func (f *IPFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.FilterResult, error) {
+func (f *IPFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.StageResult, error) {
 	defer sentry.Recover()
 
 	customRuleHashes, err := f.Cache.GetCustomRulesHashes(context.Background(), reqCtx.ProfileId)
@@ -154,7 +161,13 @@ func (f *IPFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, dctx
 		return nil, err
 	}
 
-	var result model.FilterResult = model.FilterResult{Status: model.StatusProcessed}
+	result := &model.StageResult{Decision: model.DecisionNone, Tier: TierCustomRules}
+	allowMatched := false
+	blockMatched := false
+
+	if dctx == nil || dctx.Res == nil {
+		return result, nil
+	}
 
 	for _, customRuleHash := range customRuleHashes {
 		hash, err := f.Cache.GetCustomRulesHash(context.Background(), customRuleHash)
@@ -166,20 +179,104 @@ func (f *IPFilter) filterCustomRules(reqCtx *requestcontext.RequestContext, dctx
 			log.Debug().Str("hash", customRuleHash).Msg("Old custom rule detected, syntax is empty")
 			continue
 		}
-		if !strings.Contains(syntax, "ip") {
-			continue
-		}
-		if dctx.Res != nil {
+
+		switch {
+		case strings.Contains(syntax, "ip"):
 			for _, a := range dctx.Res.Answer {
-				f.filterIPs(&result, a, hash)
+				allow, block := f.matchIPRule(a, hash)
+				allowMatched = allowMatched || allow
+				blockMatched = blockMatched || block
 			}
+		case syntax == "asn":
+			if f.ASNLookup == nil {
+				continue
+			}
+			ruleASN, ok := parseCustomRuleASN(hash["value"])
+			if !ok {
+				log.Debug().Str("hash", customRuleHash).Str("value", hash["value"]).Msg("Invalid ASN custom rule value")
+				continue
+			}
+			for _, a := range dctx.Res.Answer {
+				allow, block := f.matchASNRule(a, ruleASN, hash["action"])
+				allowMatched = allowMatched || allow
+				blockMatched = blockMatched || block
+			}
+		default:
+			continue
 		}
 
 	}
-	return &result, nil
+
+	if blockMatched {
+		result.Decision = model.DecisionBlock
+		result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+		return result, nil
+	}
+	if allowMatched {
+		result.Decision = model.DecisionAllow
+		result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+		return result, nil
+	}
+
+	return result, nil
 }
 
-func (f *IPFilter) filterIPs(result *model.FilterResult, rr dns.RR, hash map[string]string) {
+func parseCustomRuleASN(value string) (uint, bool) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return 0, false
+	}
+
+	upper := strings.ToUpper(trimmed)
+	if strings.HasPrefix(upper, "AS") {
+		trimmed = strings.TrimSpace(trimmed[2:])
+	}
+	if trimmed == "" {
+		return 0, false
+	}
+
+	parsed, err := strconv.ParseUint(trimmed, 10, 32)
+	if err != nil || parsed == 0 {
+		return 0, false
+	}
+	return uint(parsed), true
+}
+
+func (f *IPFilter) matchASNRule(rr dns.RR, ruleASN uint, action string) (allow bool, block bool) {
+	var ip net.IP
+	switch v := rr.(type) {
+	case *dns.A:
+		ip = v.A
+	case *dns.AAAA:
+		ip = v.AAAA
+	default:
+		return false, false
+	}
+	if ip == nil {
+		return false, false
+	}
+
+	asn, err := f.ASNLookup.ASN(ip)
+	if err != nil || asn == 0 {
+		return false, false
+	}
+	if asn != ruleASN {
+		return false, false
+	}
+
+	switch action {
+	case ACTION_BLOCK:
+		log.Debug().Str("reason", REASON_CUSTOM_RULES).Uint("asn", asn).Msg("Blocked ASN")
+		return false, true
+	case ACTION_ALLOW:
+		log.Debug().Str("reason", REASON_CUSTOM_RULES).Uint("asn", asn).Msg("Allowing ASN")
+		return true, false
+	default:
+		return false, false
+	}
+}
+
+func (f *IPFilter) matchIPRule(rr dns.RR, hash map[string]string) (allow bool, block bool) {
 	switch ip := rr.(type) {
 	case *dns.A:
 		if ip.A.Equal(net.ParseIP(hash["value"])) {
@@ -189,15 +286,14 @@ func (f *IPFilter) filterIPs(result *model.FilterResult, rr dns.RR, hash map[str
 					Str("reason", REASON_CUSTOM_RULES).
 					Str("pattern", hash["value"]).
 					Msgf("Blocked IP: %s", ip.A.String())
-				result.Status = model.StatusBlocked
-				result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+				return false, true
 
 			case ACTION_ALLOW:
 				log.Debug().
 					Str("reason", REASON_CUSTOM_RULES).
 					Str("pattern", hash["value"]).
 					Msgf("Allowing IP: %s", rr.String())
-				result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+				return true, false
 			}
 		}
 	case *dns.AAAA:
@@ -208,16 +304,16 @@ func (f *IPFilter) filterIPs(result *model.FilterResult, rr dns.RR, hash map[str
 					Str("reason", REASON_CUSTOM_RULES).
 					Str("pattern", hash["value"]).
 					Msgf("Blocked IP: %s", ip.AAAA.String())
-				result.Status = model.StatusBlocked
-				result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+				return false, true
 
 			case ACTION_ALLOW:
 				log.Debug().
 					Str("reason", REASON_CUSTOM_RULES).
 					Str("pattern", hash["value"]).
 					Msgf("Allowing IP: %s", rr.String())
-				result.Reasons = append(result.Reasons, REASON_CUSTOM_RULES)
+				return true, false
 			}
 		}
 	}
+	return false, false
 }

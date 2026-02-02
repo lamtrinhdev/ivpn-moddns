@@ -17,6 +17,15 @@ definitions:
       error:
         type: string
     type: object
+  api.ServicesUpdates:
+    properties:
+      service_ids:
+        items:
+          type: string
+        type: array
+    required:
+    - service_ids
+    type: object
   api.WebAuthnLoginBeginRequest:
     properties:
       email:
@@ -223,6 +232,8 @@ definitions:
         - block
         - allow
         type: string
+      services:
+        $ref: '#/definitions/model.ServicesSettings'
       subdomains_rule:
         enum:
         - block
@@ -350,6 +361,13 @@ definitions:
         $ref: '#/definitions/model.DNSSECSettings'
     required:
     - dnssec
+    type: object
+  model.ServicesSettings:
+    properties:
+      blocked:
+        items:
+          type: string
+        type: array
     type: object
   model.StatisticsAggregated:
     properties:
@@ -877,6 +895,26 @@ definitions:
       expires_at:
         type: string
       reauth_token:
+        type: string
+    type: object
+  servicescatalog.Catalog:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/servicescatalog.Service'
+        type: array
+    type: object
+  servicescatalog.Service:
+    properties:
+      asns:
+        items:
+          type: integer
+        type: array
+      id:
+        type: string
+      logo_key:
+        type: string
+      name:
         type: string
     type: object
   webauthncose.COSEAlgorithmIdentifier:
@@ -1826,6 +1864,83 @@ paths:
       summary: Download profile query logs
       tags:
       - QueryLogs
+  /api/v1/profiles/{id}/services:
+    delete:
+      consumes:
+      - application/json
+      description: Disable services for a profile (removes from privacy.services.blocked)
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Services to disable
+        in: body
+        name: service_ids
+        required: true
+        schema:
+          $ref: '#/definitions/api.ServicesUpdates'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Disable services
+      tags:
+      - Profile
+    post:
+      consumes:
+      - application/json
+      description: Enable services for a profile (adds to privacy.services.blocked)
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Services to enable
+        in: body
+        name: service_ids
+        required: true
+        schema:
+          $ref: '#/definitions/api.ServicesUpdates'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Enable services
+      tags:
+      - Profile
   /api/v1/profiles/{id}/statistics:
     get:
       description: Get statistics data for a profile
@@ -1862,6 +1977,25 @@ paths:
       summary: Get statistics data for a profile
       tags:
       - Statistics
+  /api/v1/services:
+    get:
+      description: Get available ASN-based services presets
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/servicescatalog.Catalog'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get services catalog
+      tags:
+      - Services
   /api/v1/sessions:
     delete:
       description: Delete all sessions for the current account except the current

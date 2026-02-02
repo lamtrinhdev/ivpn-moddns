@@ -1430,6 +1430,126 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/profiles/{id}/services": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Enable services for a profile (adds to privacy.services.blocked)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Enable services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Profile ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Services to enable",
+                        "name": "service_ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ServicesUpdates"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Disable services for a profile (removes from privacy.services.blocked)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Disable services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Profile ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Services to disable",
+                        "name": "service_ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ServicesUpdates"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/profiles/{id}/statistics": {
             "get": {
                 "security": [
@@ -1475,6 +1595,37 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/services": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get available ASN-based services presets",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Get services catalog",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/servicescatalog.Catalog"
                         }
                     },
                     "500": {
@@ -2187,6 +2338,20 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ServicesUpdates": {
+            "type": "object",
+            "required": [
+                "service_ids"
+            ],
+            "properties": {
+                "service_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "api.WebAuthnLoginBeginRequest": {
             "type": "object",
             "required": [
@@ -2494,6 +2659,9 @@ const docTemplate = `{
                         "allow"
                     ]
                 },
+                "services": {
+                    "$ref": "#/definitions/model.ServicesSettings"
+                },
                 "subdomains_rule": {
                     "type": "string",
                     "enum": [
@@ -2664,6 +2832,17 @@ const docTemplate = `{
             "properties": {
                 "dnssec": {
                     "$ref": "#/definitions/model.DNSSECSettings"
+                }
+            }
+        },
+        "model.ServicesSettings": {
+            "type": "object",
+            "properties": {
+                "blocked": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -3382,6 +3561,37 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "reauth_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "servicescatalog.Catalog": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/servicescatalog.Service"
+                    }
+                }
+            }
+        },
+        "servicescatalog.Service": {
+            "type": "object",
+            "properties": {
+                "asns": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logo_key": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

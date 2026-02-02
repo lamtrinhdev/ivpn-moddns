@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -51,6 +52,10 @@ func NewAPIValidator() (*APIValidator, error) {
 		return nil, err
 	}
 	err = apiValidator.Validator.RegisterValidation("fqdn_wildcard", apiValidator.wildcardValidation)
+	if err != nil {
+		return nil, err
+	}
+	err = apiValidator.Validator.RegisterValidation("asn", asnValidation)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +133,31 @@ func (v APIValidator) wildcardValidation(fl validator.FieldLevel) bool {
 	}
 
 	return false
+}
+
+func asnValidation(fl validator.FieldLevel) bool {
+	value := strings.TrimSpace(fl.Field().String())
+	if value == "" {
+		return false
+	}
+
+	upper := strings.ToUpper(value)
+	if strings.HasPrefix(upper, "AS") {
+		if len(value) < 2 {
+			return false
+		}
+		value = strings.TrimSpace(value[2:])
+	}
+
+	if value == "" {
+		return false
+	}
+
+	parsed, err := strconv.ParseUint(value, 10, 32)
+	if err != nil {
+		return false
+	}
+	return parsed > 0
 }
 
 // passowrdValidation validates the password according to the complexity criteria

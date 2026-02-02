@@ -22,6 +22,7 @@ const (
 	SYNTAX_IPV6_CIDR     = "ip6_cidr"
 	SYNTAX_FQDN          = "fqdn"
 	SYNTAX_FQDN_WILDCARD = "fqdn_wildcard"
+	SYNTAX_ASN           = "asn"
 	SYNTAX_UNKNOWN       = "unknown_syntax"
 )
 
@@ -45,7 +46,10 @@ type ProfileSettings struct {
 func NewSettings() *ProfileSettings {
 	return &ProfileSettings{
 		Privacy: &Privacy{
-			Blocklists:     make([]string, 0),
+			Blocklists: make([]string, 0),
+			Services: &ServicesSettings{
+				Blocked: make([]string, 0),
+			},
 			DefaultRule:    DEFAULT_RULE_ALLOW,
 			SubdomainsRule: ACTION_BLOCK,
 		},
@@ -112,7 +116,7 @@ func (p CustomRuleSyntax) MarshalBinary() (data []byte, err error) {
 }
 
 var (
-	validations = []string{"fqdn", "ip4_addr", "ip6_addr", "fqdn_wildcard"}
+	validations = []string{"fqdn", "ip4_addr", "ip6_addr", "fqdn_wildcard", "asn"}
 )
 
 func NewCustomRuleSyntax(vldtr *validator.Validate, value string) (CustomRuleSyntax, error) {

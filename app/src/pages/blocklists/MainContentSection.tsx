@@ -28,6 +28,8 @@ import { useAppStore } from "@/store/general";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "sonner";
 import axios from "axios";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ServicesContentSection from "@/pages/blocklists/ServicesContentSection";
 
 const INDIVIDUAL_LISTS = [
     { label: "Hagezi", tag: "hagezi" },
@@ -73,6 +75,7 @@ export const formatUpdatedRelative = (isoDate?: string): string => {
 };
 
 export default function MainContentSection(): JSX.Element {
+    const [activeTab, setActiveTab] = useState("blocklists");
     const [showAlert, setShowAlert] = useState(true);
     const [blocklists, setBlocklists] = useState<ModelBlocklist[]>([]);
     const [loading, setLoading] = useState(true);
@@ -241,177 +244,205 @@ export default function MainContentSection(): JSX.Element {
         }
     };
 
+    const tabTriggerClassName =
+        "relative rounded-none border-0 bg-transparent data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-[var(--tailwind-colors-slate-300)] data-[state=active]:text-[var(--tailwind-colors-slate-50)] hover:text-[var(--tailwind-colors-slate-50)] transition-colors duration-200 ease-out " +
+        "after:absolute after:left-0 after:right-0 after:-bottom-px after:h-[2px] after:rounded-full after:bg-[var(--tailwind-colors-rdns-600)] after:opacity-0 after:transition-opacity after:duration-200 after:ease-out " +
+        "hover:after:opacity-40 data-[state=active]:after:opacity-100";
+
     return (
         <div className="flex flex-col w-full items-start gap-6 p-6 md:p-8">
-            {/* Page Description */}
-            <section className="w-full">
-                <p className="text-[var(--tailwind-colors-slate-200)] text-base leading-6">
-                    Blocklists are collections of domains and IP addresses that help block trackers, ads, and malicious content. Choose from curated lists or individual providers to customize your DNS filtering experience.
-                </p>
-            </section>
-
-            {/* Alert Card */}
-            <section className="w-full">
-                {showAlert && (
-                    <AlertCard
-                        description={
-                            <>
-                                <div>
-                                    Enabling several large blocklists may degrade your browsing experience. Start with one of our predefined lists that fits your protection needs:
-                                    <span className="inline-flex gap-2 ml-1 align-baseline">
-                                        <span
-                                            className="underline cursor-pointer"
-                                            onClick={() => setFilterValue("basic")}
-                                        >
-                                            Basic
-                                        </span>
-                                        <span
-                                            className="underline cursor-pointer"
-                                            onClick={() => setFilterValue("comprehensive")}
-                                        >
-                                            Comprehensive
-                                        </span>
-                                        <span
-                                            className="underline cursor-pointer"
-                                            onClick={() => setFilterValue("restrictive")}
-                                        >
-                                            Restrictive
-                                        </span>
-                                    </span>
-                                </div>
-                            </>
-                        }
-                        onClose={() => setShowAlert(false)}
-                        className="w-full"
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full max-w-[420px] h-11 bg-transparent border-b border-[var(--tailwind-colors-slate-700)] rounded-none p-0 justify-start">
+                    <TabsTrigger value="blocklists" className={tabTriggerClassName}>
+                        Blocklists
+                    </TabsTrigger>
+                    <div
+                        aria-hidden="true"
+                        className="self-stretch h-[calc(100%+1px)] w-px bg-[var(--tailwind-colors-slate-700)]"
                     />
-                )}
-            </section>
+                    <TabsTrigger value="services" className={tabTriggerClassName}>
+                        Services
+                    </TabsTrigger>
+                </TabsList>
 
-            {/* Filters and Search (mobile-first layout similar to logs page) */}
-            <section className="w-full flex flex-col gap-2.5">
-                {/* Row 1: search only (mobile). Desktop search handled in row 2 */}
-                <div className="flex items-start w-full md:hidden">
-                    <div className="relative flex-1 min-w-0 w-full">
-                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--tailwind-colors-slate-400)]" />
-                        <Input
-                            className="h-11 min-h-11 pl-10 pr-3 py-2 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-200)] rounded-lg placeholder:text-[var(--tailwind-colors-slate-500)]"
-                            placeholder="Search blocklists"
-                            aria-label="Search blocklists"
-                            value={searchValue}
-                            onChange={e => setSearchValue(e.target.value)}
-                        />
-                    </div>
-                </div>
-                {/* Row 2: horizontal scroll filters line (mobile) / single row on desktop */}
-                <div className="flex items-start gap-2 md:gap-3 w-full flex-wrap md:flex-nowrap overflow-visible md:overflow-x-auto no-scrollbar md:flex-row">
-                    {/* Desktop search (hidden on mobile second row) */}
-                    <div className="relative flex-1 min-w-0 hidden md:block">
-                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--tailwind-colors-slate-400)]" />
-                        <Input
-                            className="h-9 pl-10 pr-3 py-2 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-200)] rounded-lg placeholder:text-[var(--tailwind-colors-slate-400)]"
-                            placeholder="Search blocklists"
-                            aria-label="Search blocklists"
-                            value={searchValue}
-                            onChange={e => setSearchValue(e.target.value)}
-                        />
-                    </div>
-                    {/* List Filter */}
-                    <Select value={filterValue} onValueChange={setFilterValue}>
-                        <SelectTrigger aria-label="Filter lists" className="h-11 md:h-9 min-h-11 md:min-h-0 flex-1 md:flex-none w-full md:w-auto md:min-w-[170px] md:max-w-xs px-2 md:px-3 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-50)] rounded-lg flex">
-                            <div className="flex items-center gap-1 w-full min-w-0">
-                                <ListFilterIcon className="h-4 w-4 shrink-0" />
-                                <span className="text-sm truncate"><SelectValue placeholder="All lists" /></span>
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All lists</SelectItem>
-                            <div className="px-2 py-1 text-xs text-[var(--tailwind-colors-rdns-600)] font-semibold">Pre-defined lists</div>
-                            {PREDEFINED_LISTS.map(({ label, tag }) => (
-                                <SelectItem key={tag} value={tag}>{label}</SelectItem>
-                            ))}
-                            <div className="px-2 py-1 text-xs text-[var(--tailwind-colors-rdns-600)] font-semibold">Individual lists</div>
-                            {INDIVIDUAL_LISTS.map(({ label, tag }) => (
-                                <SelectItem key={tag} value={tag}>{label}</SelectItem>
-                            ))}
-                            <div className="px-2 py-1 text-xs text-[var(--tailwind-colors-rdns-600)] font-semibold">Status</div>
-                            {STATUS_FILTERS.map(({ label, value }) => (
-                                <SelectItem key={value} value={value}>{label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {/* Sort By */}
-                    <Select value={sortValue} onValueChange={(value) => setSortValue(value as ApiV1BlocklistsGetSortByEnum)}>
-                        <SelectTrigger aria-label="Sort blocklists" className="h-11 md:h-9 min-h-11 md:min-h-0 flex-1 md:flex-none w-full md:w-auto md:min-w-[180px] md:max-w-[240px] px-2 md:px-3 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-50)] rounded-lg flex">
-                            <div className="flex items-center gap-1 w-full min-w-0">
-                                <ArrowUpDown className="h-4 w-4 shrink-0" />
-                                <span className="text-sm truncate"><SelectValue placeholder="Recently updated" /></span>
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {SORT_OPTIONS.map(({ label, value }) => (
-                                <SelectItem key={value} value={value}>
-                                    {label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {/* Enable Listed Button (mobile & desktop at end of row) */}
-                    <div className="flex-shrink-0 ml-auto">
-                        <Button
-                            aria-label="Enable listed blocklists"
-                            variant="outline"
-                            size="icon"
-                            className={`w-11 h-11 md:h-11 lg:h-9 min-h-11 md:min-h-11 lg:min-h-0 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] ${enableListedActive ? "opacity-100" : "opacity-50"}`}
-                            disabled={!enableListedActive || updating === "all"}
-                            onClick={handleEnableListed}
-                            title="Enable currently listed blocklists"
-                        >
-                            <ToggleLeftIcon className={`w-4 h-4 ${enableListedActive ? 'text-[var(--tailwind-colors-rdns-600)]' : 'text-[var(--tailwind-colors-slate-500)]'}`} />
-                        </Button>
-                    </div>
-                </div>
-            </section>
+                <TabsContent value="blocklists" className="mt-4">
+                    <div className="flex flex-col w-full items-start gap-6">
+                        {/* Page Description */}
+                        <section className="w-full">
+                            <p className="text-[var(--tailwind-colors-slate-200)] text-base leading-6">
+                                Blocklists are collections of domains and IP addresses that help block trackers, ads, and malicious content. Choose from curated lists or individual providers to customize your DNS filtering experience.
+                            </p>
+                        </section>
 
-            {/* Blocklist Cards */}
-            <section className="w-full">
-                {/*
-                 * On tablets the previous combination of parent h-full, flex-1 and nested ScrollArea with h-full
-                 * resulted in the ScrollArea viewport height being computed smaller than the content area created
-                 * by stacked fixed headers, preventing the overall document from scrolling to the very bottom.
-                 * We remove forced h-full and instead cap the ScrollArea only when there is sufficient vertical space.
-                 */}
-                <ScrollArea className="w-full max-h-[calc(100vh-var(--app-header-stack,120px)-200px)] md:max-h-[unset]">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
-                        {loading ? (
-                            <div className="col-span-full text-center text-[var(--tailwind-colors-slate-400)] py-8">
-                                Loading blocklists...
-                            </div>
-                        ) : filteredBlocklists.length === 0 ? (
-                            <div className="col-span-full flex justify-center py-8">
-                                <EmptyState searchTerm={searchValue.trim() || undefined} />
-                            </div>
-                        ) : (
-                            filteredBlocklists.map((blocklist) => {
-                                const blocklistId = blocklist.blocklist_id;
-                                const isEnabled = enabledBlocklists.includes(blocklistId);
-                                return (
-                                    <BlocklistCard
-                                        key={blocklistId}
-                                        title={blocklist.name}
-                                        description={blocklist.description}
-                                        entries={blocklist.entries}
-                                        updated={formatUpdatedRelative(blocklist.last_modified)}
-                                        onSwitchChange={(checked) => handleBlocklistSwitch(blocklistId, checked)}
-                                        switchChecked={isEnabled}
-                                        switchDisabled={updating === blocklistId}
-                                        homepage={blocklist.homepage}
+                        {/* Alert Card */}
+                        <section className="w-full">
+                            {showAlert && (
+                                <AlertCard
+                                    description={
+                                        <>
+                                            <div>
+                                                Enabling several large blocklists may degrade your browsing experience. Start with one of our predefined lists that fits your protection needs:
+                                                <span className="inline-flex gap-2 ml-1 align-baseline">
+                                                    <span
+                                                        className="underline cursor-pointer"
+                                                        onClick={() => setFilterValue("basic")}
+                                                    >
+                                                        Basic
+                                                    </span>
+                                                    <span
+                                                        className="underline cursor-pointer"
+                                                        onClick={() => setFilterValue("comprehensive")}
+                                                    >
+                                                        Comprehensive
+                                                    </span>
+                                                    <span
+                                                        className="underline cursor-pointer"
+                                                        onClick={() => setFilterValue("restrictive")}
+                                                    >
+                                                        Restrictive
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </>
+                                    }
+                                    onClose={() => setShowAlert(false)}
+                                    className="w-full"
+                                />
+                            )}
+                        </section>
+
+                        {/* Filters and Search (mobile-first layout similar to logs page) */}
+                        <section className="w-full flex flex-col gap-2.5">
+                            {/* Row 1: search only (mobile). Desktop search handled in row 2 */}
+                            <div className="flex items-start w-full md:hidden">
+                                <div className="relative flex-1 min-w-0 w-full">
+                                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--tailwind-colors-slate-400)]" />
+                                    <Input
+                                        className="h-11 min-h-11 pl-10 pr-3 py-2 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-200)] rounded-lg placeholder:text-[var(--tailwind-colors-slate-500)]"
+                                        placeholder="Search blocklists"
+                                        aria-label="Search blocklists"
+                                        value={searchValue}
+                                        onChange={e => setSearchValue(e.target.value)}
                                     />
-                                );
-                            })
-                        )}
+                                </div>
+                            </div>
+                            {/* Row 2: horizontal scroll filters line (mobile) / single row on desktop */}
+                            <div className="flex items-start gap-2 md:gap-3 w-full flex-wrap md:flex-nowrap overflow-visible md:overflow-x-auto no-scrollbar md:flex-row">
+                                {/* Desktop search (hidden on mobile second row) */}
+                                <div className="relative flex-1 min-w-0 hidden md:block">
+                                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--tailwind-colors-slate-400)]" />
+                                    <Input
+                                        className="h-9 pl-10 pr-3 py-2 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-200)] rounded-lg placeholder:text-[var(--tailwind-colors-slate-400)]"
+                                        placeholder="Search blocklists"
+                                        aria-label="Search blocklists"
+                                        value={searchValue}
+                                        onChange={e => setSearchValue(e.target.value)}
+                                    />
+                                </div>
+                                {/* List Filter */}
+                                <Select value={filterValue} onValueChange={setFilterValue}>
+                                    <SelectTrigger aria-label="Filter lists" className="h-11 md:h-9 min-h-11 md:min-h-0 flex-1 md:flex-none w-full md:w-auto md:min-w-[170px] md:max-w-xs px-2 md:px-3 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-50)] rounded-lg flex">
+                                        <div className="flex items-center gap-1 w-full min-w-0">
+                                            <ListFilterIcon className="h-4 w-4 shrink-0" />
+                                            <span className="text-sm truncate"><SelectValue placeholder="All lists" /></span>
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All lists</SelectItem>
+                                        <div className="px-2 py-1 text-xs text-[var(--tailwind-colors-rdns-600)] font-semibold">Pre-defined lists</div>
+                                        {PREDEFINED_LISTS.map(({ label, tag }) => (
+                                            <SelectItem key={tag} value={tag}>{label}</SelectItem>
+                                        ))}
+                                        <div className="px-2 py-1 text-xs text-[var(--tailwind-colors-rdns-600)] font-semibold">Individual lists</div>
+                                        {INDIVIDUAL_LISTS.map(({ label, tag }) => (
+                                            <SelectItem key={tag} value={tag}>{label}</SelectItem>
+                                        ))}
+                                        <div className="px-2 py-1 text-xs text-[var(--tailwind-colors-rdns-600)] font-semibold">Status</div>
+                                        {STATUS_FILTERS.map(({ label, value }) => (
+                                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {/* Sort By */}
+                                <Select value={sortValue} onValueChange={(value) => setSortValue(value as ApiV1BlocklistsGetSortByEnum)}>
+                                    <SelectTrigger aria-label="Sort blocklists" className="h-11 md:h-9 min-h-11 md:min-h-0 flex-1 md:flex-none w-full md:w-auto md:min-w-[180px] md:max-w-[240px] px-2 md:px-3 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] text-[var(--tailwind-colors-slate-50)] rounded-lg flex">
+                                        <div className="flex items-center gap-1 w-full min-w-0">
+                                            <ArrowUpDown className="h-4 w-4 shrink-0" />
+                                            <span className="text-sm truncate"><SelectValue placeholder="Recently updated" /></span>
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SORT_OPTIONS.map(({ label, value }) => (
+                                            <SelectItem key={value} value={value}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {/* Enable Listed Button (mobile & desktop at end of row) */}
+                                <div className="flex-shrink-0 ml-auto">
+                                    <Button
+                                        aria-label="Enable listed blocklists"
+                                        variant="outline"
+                                        size="icon"
+                                        className={`w-11 h-11 md:h-11 lg:h-9 min-h-11 md:min-h-11 lg:min-h-0 !bg-[var(--shadcn-ui-app-background)] border-[var(--tailwind-colors-slate-700)] ${enableListedActive ? "opacity-100" : "opacity-50"}`}
+                                        disabled={!enableListedActive || updating === "all"}
+                                        onClick={handleEnableListed}
+                                        title="Enable currently listed blocklists"
+                                    >
+                                        <ToggleLeftIcon className={`w-4 h-4 ${enableListedActive ? 'text-[var(--tailwind-colors-rdns-600)]' : 'text-[var(--tailwind-colors-slate-500)]'}`} />
+                                    </Button>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Blocklist Cards */}
+                        <section className="w-full">
+                            {/*
+                             * On tablets the previous combination of parent h-full, flex-1 and nested ScrollArea with h-full
+                             * resulted in the ScrollArea viewport height being computed smaller than the content area created
+                             * by stacked fixed headers, preventing the overall document from scrolling to the very bottom.
+                             * We remove forced h-full and instead cap the ScrollArea only when there is sufficient vertical space.
+                             */}
+                            <ScrollArea className="w-full max-h-[calc(100vh-var(--app-header-stack,120px)-200px)] md:max-h-[unset]">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
+                                    {loading ? (
+                                        <div className="col-span-full text-center text-[var(--tailwind-colors-slate-400)] py-8">
+                                            Loading blocklists...
+                                        </div>
+                                    ) : filteredBlocklists.length === 0 ? (
+                                        <div className="col-span-full flex justify-center py-8">
+                                            <EmptyState searchTerm={searchValue.trim() || undefined} />
+                                        </div>
+                                    ) : (
+                                        filteredBlocklists.map((blocklist) => {
+                                            const blocklistId = blocklist.blocklist_id;
+                                            const isEnabled = enabledBlocklists.includes(blocklistId);
+                                            return (
+                                                <BlocklistCard
+                                                    key={blocklistId}
+                                                    title={blocklist.name}
+                                                    description={blocklist.description}
+                                                    entries={blocklist.entries}
+                                                    updated={formatUpdatedRelative(blocklist.last_modified)}
+                                                    onSwitchChange={(checked) => handleBlocklistSwitch(blocklistId, checked)}
+                                                    switchChecked={isEnabled}
+                                                    switchDisabled={updating === blocklistId}
+                                                    homepage={blocklist.homepage}
+                                                />
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </section>
                     </div>
-                </ScrollArea>
-            </section>
+                </TabsContent>
+
+                <TabsContent value="services" className="mt-4">
+                    {activeTab === "services" ? <ServicesContentSection /> : null}
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

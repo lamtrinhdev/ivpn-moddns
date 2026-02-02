@@ -315,7 +315,7 @@ export function RuleComposer({
                         Menu,
                     }}
                     classNamePrefix="rule-composer"
-                    placeholder="Paste or type domains"
+                    placeholder="Paste or type domains, IPs, or ASNs"
                     value={tokens}
                     inputValue={inputValue}
                     onChange={handleChange}
