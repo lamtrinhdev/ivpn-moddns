@@ -6,7 +6,9 @@ import AuthFooter from "@/components/auth/AuthFooter";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import modDNSLogo from '@/assets/logos/modDNS.svg'
+import modDNSLogoDarkTheme from '@/assets/logos/modDNS-dark-theme.svg';
+import modDNSLogoLightTheme from '@/assets/logos/modDNS-light-theme.svg';
+import { useTheme } from "@/components/theme-provider";
 import api from "@/api/api";
 import { toast } from "sonner";
 import type { RequestsResetPasswordBody } from "@/api/client";
@@ -17,6 +19,8 @@ export default function PasswordReset(): JSX.Element {
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
     const [resending, setResending] = useState(false);
+    const { theme } = useTheme();
+    const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const handleReset = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,7 +59,7 @@ export default function PasswordReset(): JSX.Element {
     };
 
     return (
-        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--shadcn-ui-app-background)]">
+        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--public-page-background)]">
             {/* Main content area - centered vertically and horizontally */}
             <div className="flex-1 flex items-center justify-center safe-px py-8">
                 <div className="flex flex-col auth-shell items-center gap-4 px-4 sm:px-0">
@@ -66,7 +70,7 @@ export default function PasswordReset(): JSX.Element {
                                 <img
                                     className="w-[200px] h-10"
                                     alt="modDNS logo"
-                                    src={modDNSLogo}
+                                    src={isDarkMode ? modDNSLogoDarkTheme : modDNSLogoLightTheme}
                                     style={{ display: "block" }}
                                 />
                             </div>
@@ -91,11 +95,11 @@ export default function PasswordReset(): JSX.Element {
                                         <form className="flex flex-col items-start gap-8 w-full" onSubmit={handleReset}>
                                             <div className="flex flex-col items-start gap-4 w-full">
                                                 <div className="relative w-full">
-                                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--shadcn-ui-app-muted-foreground)]" />
+                                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--tailwind-colors-slate-400)]" />
                                                     <Input
                                                         type="email"
                                                         placeholder="Email address"
-                                                        className="pl-10 bg-[var(--shadcn-ui-app-background)] text-[var(--shadcn-ui-app-muted-foreground)] border-0 rounded-[var(--primitives-radius-radius-md)] h-auto py-2.5 font-normal text-sm"
+                                                        className="pl-10 bg-[var(--shadcn-ui-app-muted)] focus:bg-[var(--tailwind-colors-slate-700)] border border-[var(--shadcn-ui-app-border)] text-[var(--shadcn-ui-app-foreground)] placeholder:text-[var(--tailwind-colors-slate-400)] font-normal text-sm rounded-md"
                                                         value={email}
                                                         onChange={e => setEmail(e.target.value)}
                                                         required

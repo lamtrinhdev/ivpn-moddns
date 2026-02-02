@@ -58,7 +58,7 @@ const ToggleGroup: React.FC<ToggleGroupProps> = ({
     options,
     value,
     onChange,
-    variant = "outline",
+    variant = "default",
     className = "",
     itemClassName = "",
     groupProps = {},
@@ -70,8 +70,10 @@ const ToggleGroup: React.FC<ToggleGroupProps> = ({
             aria-label="Toggle Group"
             variant={variant}
             className={`
-                p-0.5 rounded-[var(--primitives-radius-radius)] gap-0
-                transition-colors duration-200 bg-[var(--tailwind-colors-slate-800)]
+                p-0.5 rounded-xl gap-0
+                transition-colors duration-200 bg-[#1F2423]
+                [:root:not(.dark)_&]:bg-[var(--tailwind-colors-slate-light-300)]
+                !shadow-none !border-none !outline-none !ring-0
                 ${className}
             `}
             value={value}
@@ -90,13 +92,14 @@ const ToggleGroup: React.FC<ToggleGroupProps> = ({
                             flex flex-row items-center justify-center
                             min-w-[72px] h-9 px-3 py-0
                             transition-all duration-200 ease-in-out
-                            data-[state=on]:bg-[var(--shadcn-ui-app-background)] data-[state=on]:border-[var(--tailwind-colors-slate-800)] data-[state=on]:shadow-[0_2px_8px_0_rgba(18,164,149,0.10)]
-                            data-[state=off]:border-[var(--tailwind-colors-slate-800)] data-[state=off]:bg-[var(--tailwind-colors-slate-800)]
+                            data-[state=on]:bg-[var(--shadcn-ui-app-background)] data-[state=on]:shadow-[0_2px_8px_0_rgba(18,164,149,0.10)]
+                            [:root:not(.dark)_&]:data-[state=on]:bg-white [:root:not(.dark)_&]:data-[state=on]:shadow-sm
+                            data-[state=off]:bg-[#1F2423]
+                            [:root:not(.dark)_&]:data-[state=off]:bg-[var(--tailwind-colors-slate-light-300)]
+                            !border-none !shadow-none !outline-none !ring-0
+                            rounded-lg
                             ${itemClassName}
                         `}
-                        style={{
-                            borderRadius: "var(--tailwind-primitives-border-radius-rounded-lg)",
-                        }}
                         {...itemProps}
                     >
                         <span className="flex items-center gap-2">
@@ -106,8 +109,8 @@ const ToggleGroup: React.FC<ToggleGroupProps> = ({
                                     font-medium text-xs text-left leading-5
                                     transition-colors duration-200
                                     ${isSelected
-                                        ? "text-[var(--tailwind-colors-base-white)]"
-                                        : "text-[var(--tailwind-colors-slate-400)]"
+                                        ? "text-[var(--shadcn-ui-app-foreground)]"
+                                        : "text-[var(--shadcn-ui-app-muted-foreground)]"
                                     }
                                 `}
                                 style={{

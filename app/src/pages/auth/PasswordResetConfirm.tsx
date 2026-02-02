@@ -4,7 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import React, { useState, type JSX } from "react";
-import modDNSLogo from "@/assets/logos/modDNS.svg";
+import modDNSLogoDarkTheme from "@/assets/logos/modDNS-dark-theme.svg";
+import modDNSLogoLightTheme from "@/assets/logos/modDNS-light-theme.svg";
+import { useTheme } from "@/components/theme-provider";
 import AuthFooter from "@/components/auth/AuthFooter";
 import api from "@/api/api";
 import { toast } from "sonner";
@@ -19,6 +21,8 @@ export default function PasswordResetConfirm(): JSX.Element {
     const [otp, setOtp] = useState("");
     const [showOtp, setShowOtp] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { theme } = useTheme();
+    const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const handleReset = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,7 +92,7 @@ export default function PasswordResetConfirm(): JSX.Element {
     };
 
     return (
-        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--shadcn-ui-app-background)]">
+        <div className="relative flex flex-col min-h-screen w-full overflow-x-hidden bg-[var(--public-page-background)]">
             {/* Main content area - centered vertically and horizontally */}
             <div className="flex-1 flex items-center justify-center safe-px py-8">
                 <div className="flex flex-col auth-shell items-center gap-4 px-4 sm:px-0">
@@ -99,7 +103,7 @@ export default function PasswordResetConfirm(): JSX.Element {
                                     <img
                                         className="w-[200px] h-10"
                                         alt="modDNS logo"
-                                        src={modDNSLogo}
+                                        src={isDarkMode ? modDNSLogoDarkTheme : modDNSLogoLightTheme}
                                         style={{ display: "block" }}
                                     />
                                 </div>

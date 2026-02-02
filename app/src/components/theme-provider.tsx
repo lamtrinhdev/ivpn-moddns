@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react"
 
-type Theme = "dark" | "light" | "system"
+type Theme = "dark" | "light"
 
 type ThemeProviderProps = {
     children: React.ReactNode
@@ -14,7 +14,7 @@ type ThemeProviderState = {
 }
 
 const initialState: ThemeProviderState = {
-    theme: "system",
+    theme: "dark",
     setTheme: () => null,
 }
 
@@ -22,30 +22,49 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
 export function ThemeProvider({
     children,
-    defaultTheme = "system",
+    defaultTheme = "dark",
     storageKey = "vite-ui-theme",
     ...props
 }: ThemeProviderProps) {
     const [theme, setTheme] = useState<Theme>(
-        () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+        () => {
+            const stored = localStorage.getItem(storageKey)
+            if (stored === "dark" || stored === "light") return stored
+            return defaultTheme
+        }
     )
 
     useEffect(() => {
         const root = window.document.documentElement
 
-        root.classList.remove("light", "dark")
+        // Disable all CSS transitions so the theme switch is instant
+        const style = document.createElement("style")
+        style.appendChild(document.createTextNode(
+            "*, *::before, *::after { transition: none !important; }"
+        ))
+        document.head.appendChild(style)
 
-        if (theme === "system") {
-            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-                .matches
-                ? "dark"
-                : "light"
-
-            root.classList.add(systemTheme)
-            return
+        // Only remove the opposite class to avoid flash when :root:not(.dark) briefly matches
+        if (theme === "dark") {
+            root.classList.remove("light")
+        } else {
+            root.classList.remove("dark")
         }
-
         root.classList.add(theme)
+
+        // Also set the data-shadcn-ui-mode attribute for CSS variable overrides
+        document.body.setAttribute(
+            'data-shadcn-ui-mode',
+            theme === 'dark' ? 'dark-emerald' : 'light-emerald'
+        )
+
+        // Force reflow so the browser paints with transitions disabled
+        document.body.offsetHeight // eslint-disable-line @typescript-eslint/no-unused-expressions
+
+        // Re-enable transitions on the next frame
+        requestAnimationFrame(() => {
+            document.head.removeChild(style)
+        })
     }, [theme])
 
     const value = {
