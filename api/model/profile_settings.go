@@ -49,8 +49,8 @@ func NewSettings() *ProfileSettings {
 		Privacy: &Privacy{
 			Blocklists:            make([]string, 0),
 			DefaultRule:           DEFAULT_RULE_ALLOW,
-			SubdomainsRule:        ACTION_BLOCK,
-			CustomRulesSubdomains: CUSTOM_RULES_SUBDOMAINS_INCLUDE,
+			BlocklistsSubdomainsRule:  ACTION_BLOCK,
+			CustomRulesSubdomainsRule: CUSTOM_RULES_SUBDOMAINS_INCLUDE,
 		},
 		Security: &Security{
 			DNSSECSettings: DNSSECSettings{

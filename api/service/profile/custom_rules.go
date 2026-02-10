@@ -107,7 +107,7 @@ func (p *ProfileService) CreateCustomRulesBulk(ctx context.Context, accountId, p
 
 		// When custom_rules_subdomains is "include" (or empty/unset for backwards compat),
 		// auto-prepend "*." to plain FQDN values so subdomains are included.
-		if profile.Settings.Privacy.CustomRulesSubdomains != model.CUSTOM_RULES_SUBDOMAINS_EXACT {
+		if profile.Settings.Privacy.CustomRulesSubdomainsRule != model.CUSTOM_RULES_SUBDOMAINS_EXACT {
 			if !strings.Contains(normalized, "*") && net.ParseIP(normalized) == nil {
 				normalized = "*." + normalized
 			}
