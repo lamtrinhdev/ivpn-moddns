@@ -2167,6 +2167,8 @@ const docTemplate = `{
             "properties": {
                 "blocklist_ids": {
                     "type": "array",
+                    "maxItems": 100,
+                    "minItems": 1,
                     "items": {
                         "type": "string"
                     }
@@ -2215,9 +2217,14 @@ const docTemplate = `{
         },
         "api.createProfileBody": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1
                 }
             }
         },
@@ -2487,6 +2494,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "custom_rules_subdomains": {
+                    "type": "string",
+                    "enum": [
+                        "include",
+                        "exact"
+                    ]
+                },
                 "default_rule": {
                     "type": "string",
                     "enum": [
@@ -2520,7 +2534,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50
                 },
                 "profile_id": {
                     "type": "string"
@@ -2596,6 +2611,7 @@ const docTemplate = `{
                         "/settings/logs/retention",
                         "/settings/privacy/default_rule",
                         "/settings/privacy/subdomains_rule",
+                        "/settings/privacy/custom_rules_subdomains",
                         "/settings/security/dnssec/enabled",
                         "/settings/security/dnssec/send_do_bit",
                         "/settings/advanced/recursor"
@@ -3167,11 +3183,17 @@ const docTemplate = `{
         "requests.CreateProfileCustomRuleBody": {
             "type": "object",
             "required": [
+                "action",
                 "value"
             ],
             "properties": {
                 "action": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "block",
+                        "allow",
+                        "comment"
+                    ]
                 },
                 "value": {
                     "type": "string"
@@ -3181,11 +3203,17 @@ const docTemplate = `{
         "requests.CreateProfileCustomRulesBatchBody": {
             "type": "object",
             "required": [
+                "action",
                 "values"
             ],
             "properties": {
                 "action": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "block",
+                        "allow",
+                        "comment"
+                    ]
                 },
                 "values": {
                     "type": "array",
