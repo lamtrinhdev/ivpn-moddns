@@ -2167,8 +2167,6 @@ const docTemplate = `{
             "properties": {
                 "blocklist_ids": {
                     "type": "array",
-                    "maxItems": 100,
-                    "minItems": 1,
                     "items": {
                         "type": "string"
                     }
@@ -2217,14 +2215,9 @@ const docTemplate = `{
         },
         "api.createProfileBody": {
             "type": "object",
-            "required": [
-                "name"
-            ],
             "properties": {
                 "name": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 1
+                    "type": "string"
                 }
             }
         },
@@ -2514,13 +2507,6 @@ const docTemplate = `{
                         "block",
                         "allow"
                     ]
-                },
-                "subdomains_rule": {
-                    "type": "string",
-                    "enum": [
-                        "block",
-                        "allow"
-                    ]
                 }
             }
         },
@@ -2541,8 +2527,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string",
-                    "maxLength": 50
+                    "type": "string"
                 },
                 "profile_id": {
                     "type": "string"
@@ -3190,17 +3175,11 @@ const docTemplate = `{
         "requests.CreateProfileCustomRuleBody": {
             "type": "object",
             "required": [
-                "action",
                 "value"
             ],
             "properties": {
                 "action": {
-                    "type": "string",
-                    "enum": [
-                        "block",
-                        "allow",
-                        "comment"
-                    ]
+                    "type": "string"
                 },
                 "value": {
                     "type": "string"
@@ -3210,17 +3189,11 @@ const docTemplate = `{
         "requests.CreateProfileCustomRulesBatchBody": {
             "type": "object",
             "required": [
-                "action",
                 "values"
             ],
             "properties": {
                 "action": {
-                    "type": "string",
-                    "enum": [
-                        "block",
-                        "allow",
-                        "comment"
-                    ]
+                    "type": "string"
                 },
                 "values": {
                     "type": "array",
