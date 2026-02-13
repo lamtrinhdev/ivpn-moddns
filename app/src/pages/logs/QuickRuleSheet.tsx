@@ -39,6 +39,12 @@ interface QuickRuleSheetProps {
 
 const iconClasses = "h-4 w-4";
 
+function prefillDomain(raw: string, mode: "include" | "exact"): string {
+    if (mode === "exact") return raw;
+    const stripped = raw.replace(/^www\./, "");
+    return `*.${stripped}`;
+}
+
 const QuickRuleSheet = ({ open, onOpenChange, domain, defaultAction }: QuickRuleSheetProps) => {
     const [action, setAction] = useState<QuickRuleAction>("denylist");
     const [domainValue, setDomainValue] = useState(domain ?? "");
@@ -55,9 +61,10 @@ const QuickRuleSheet = ({ open, onOpenChange, domain, defaultAction }: QuickRule
             return;
         }
         setAction(defaultAction ?? "denylist");
-        setDomainValue(domain ?? "");
+        const subdomainsRule = activeProfile?.settings?.privacy?.custom_rules_subdomains_rule ?? "include";
+        setDomainValue(domain ? prefillDomain(domain, subdomainsRule) : "");
         setInputError(null);
-    }, [defaultAction, domain, open]);
+    }, [activeProfile, defaultAction, domain, open]);
 
     const disabled = useMemo(() => !domainValue.trim() || isSubmitting, [domainValue, isSubmitting]);
 
