@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/ivpn/dns/libs/cache"
+	"github.com/ivpn/dns/proxy/model"
 )
 
 const CacheTypeRedis = "redis"
@@ -20,6 +21,11 @@ type Cache interface {
 	GetBlocklistEntry(ctx context.Context, blocklistId string, domain string) (bool, error)
 	GetCustomRulesHashes(ctx context.Context, profileId string) ([]string, error)
 	GetCustomRulesHash(ctx context.Context, hashId string) (map[string]string, error)
+
+	// GetProfileSettingsBatch fetches privacy, logs, DNSSEC, and advanced
+	// settings for a profile in a single Redis pipeline round-trip.
+	// The returned ProfileSettings contains per-key results and errors.
+	GetProfileSettingsBatch(ctx context.Context, profileId string) (*model.ProfileSettings, error)
 }
 
 // NewCache creates a new BlocklistCache instance
