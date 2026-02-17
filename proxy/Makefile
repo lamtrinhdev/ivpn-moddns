@@ -35,9 +35,9 @@ build: ## Build DNS Proxy application
 test: ## Run all go-based tests
 	go test -race -coverprofile=coverage.txt -covermode=atomic -v ./...
 
-mockery: ## Generate mocks
-	go install github.com/vektra/mockery/v2@v2.52.1
-	mockery --all --case underscore --exclude vendor/ --output ./mocks
+mockery: ## Generate mocks (uses .mockery.yml config)
+	go install github.com/vektra/mockery/v3@v3.6.1
+	mockery
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
