@@ -1,8 +1,40 @@
 import { ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface AuthFooterProps {
     variant?: "absolute" | "relative";
     openInNewTab?: boolean;
+}
+
+const linkClass = "text-sm !text-[var(--tailwind-colors-slate-100)] hover:!text-[var(--tailwind-colors-slate-200)] cursor-pointer transition-colors no-underline";
+
+interface InternalLinkProps {
+    href: string;
+    title: string;
+    openInNewTab: boolean;
+    children: React.ReactNode;
+}
+
+function InternalLink({ href, title, openInNewTab, children }: InternalLinkProps) {
+    if (openInNewTab) {
+        return (
+            <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClass}
+                title={`${title} (opens in new tab)`}
+            >
+                {children}
+            </a>
+        );
+    }
+
+    return (
+        <Link to={href} className={linkClass} title={title}>
+            {children}
+        </Link>
+    );
 }
 
 export default function AuthFooter({ variant = "absolute", openInNewTab = true }: AuthFooterProps) {
@@ -10,48 +42,26 @@ export default function AuthFooter({ variant = "absolute", openInNewTab = true }
         ? "absolute bottom-4 left-1/2 transform -translate-x-1/2"
         : "mt-8 flex justify-center";
 
-    const linkTarget = openInNewTab ? "_blank" : undefined;
-    const linkRel = openInNewTab ? "noopener noreferrer" : undefined;
-    const newTabHint = openInNewTab ? " (opens in new tab)" : "";
-
     return (
         <div className={containerClass}>
             <div className="flex items-center gap-4">
-                <a
-                    href="/tos"
-                    target={linkTarget}
-                    rel={linkRel}
-                    className="text-sm !text-[var(--tailwind-colors-slate-100)] hover:!text-[var(--tailwind-colors-slate-200)] cursor-pointer transition-colors no-underline"
-                    title={`Go to Terms of Service page${newTabHint}`}
-                >
+                <InternalLink href="/tos" title="Go to Terms of Service page" openInNewTab={openInNewTab}>
                     Terms of Service
-                </a>
+                </InternalLink>
                 <span className="text-sm text-[var(--tailwind-colors-slate-300)]">|</span>
-                <a
-                    href="/privacy"
-                    target={linkTarget}
-                    rel={linkRel}
-                    className="text-sm !text-[var(--tailwind-colors-slate-100)] hover:!text-[var(--tailwind-colors-slate-200)] cursor-pointer transition-colors no-underline"
-                    title={`Go to Privacy Policy page${newTabHint}`}
-                >
+                <InternalLink href="/privacy" title="Go to Privacy Policy page" openInNewTab={openInNewTab}>
                     Privacy Policy
-                </a>
+                </InternalLink>
                 <span className="text-sm text-[var(--tailwind-colors-slate-300)]">|</span>
-                <a
-                    href="/faq"
-                    target={linkTarget}
-                    rel={linkRel}
-                    className="text-sm !text-[var(--tailwind-colors-slate-100)] hover:!text-[var(--tailwind-colors-slate-200)] cursor-pointer transition-colors no-underline"
-                    title={`Go to FAQ page${newTabHint}`}
-                >
+                <InternalLink href="/faq" title="Go to FAQ page" openInNewTab={openInNewTab}>
                     FAQ
-                </a>
+                </InternalLink>
                 <span className="text-sm text-[var(--tailwind-colors-slate-300)]">|</span>
                 <a
                     href="https://ivpn.net"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm !text-[var(--tailwind-colors-slate-100)] hover:!text-[var(--tailwind-colors-slate-200)] cursor-pointer transition-colors no-underline"
+                    className={"inline-flex items-center gap-1 " + linkClass}
                     title="Go to IVPN website (opens in new tab)"
                 >
                     IVPN
