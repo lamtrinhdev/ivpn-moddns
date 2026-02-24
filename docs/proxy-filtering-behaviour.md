@@ -117,8 +117,10 @@ The `postResolve` method guards against running the IP filter in this state.
 | 21 | Block            | Block             | Blocked       | Skipped      | Blocked | postResolve guard: domain block preserved                       |
 
 **Without the guard**: Both IP sub-filters return `DecisionNone` for nil `Res`
-(`filterServices:34`, `filterCustomRules:168`). `getFinalFilteringResult([None, None])`
-returns `Processed`, which would overwrite the domain block.
+(early returns in `IPFilter.filterServices` in `proxy/filter/services.go` and
+`IPFilter.filterCustomRules` in `proxy/filter/custom_rules.go`).
+`getFinalFilteringResult([None, None])` returns `Processed`, which would
+overwrite the domain block.
 
 ---
 
