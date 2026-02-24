@@ -51,7 +51,6 @@ func TestIPFilter_PhaseIndependence(t *testing.T) {
 		profileID = "phase-independence"
 		asn       = uint(15169)
 		answerIP  = "1.1.1.1"
-		blockIP   = "2.2.2.2"
 	)
 
 	tests := []struct {
@@ -413,7 +412,7 @@ func TestIPFilter_NilResponse_ReturnsProcessed(t *testing.T) {
 			priorStatus:   model.StatusBlocked,
 		},
 		{
-			name: "#21 — BL + Domain CR Block, nil Res → IP returns Processed (server must guard)",
+			name:     "#21 — BL + Domain CR Block, nil Res → IP returns Processed (server must guard)",
 			tableRef: "#21",
 			domainResults: []model.StageResult{
 				domainBlocklistResult(),
