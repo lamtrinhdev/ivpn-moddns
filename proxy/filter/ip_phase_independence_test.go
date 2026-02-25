@@ -458,6 +458,121 @@ func TestIPFilter_NilResponse_ReturnsProcessed(t *testing.T) {
 	}
 }
 
+// TestIPFilter_NilResponse_IPAllowInert verifies that when the domain phase
+// blocks (dctx.Res is nil), configured IP allow rules are inert — they cannot
+// match without response IPs. IPFilter.Execute returns Processed, confirming
+// the server-level postResolve guard is essential (table #24-#27).
+func TestIPFilter_NilResponse_IPAllowInert(t *testing.T) {
+	const (
+		profileID = "nil-response-ip-allow"
+		asn       = uint(15169)
+		allowIP   = "1.1.1.1"
+	)
+
+	tests := []struct {
+		name              string
+		tableRef          string
+		domainResults     []model.StageResult
+		blockedServiceIDs []string
+		catalog           ServicesCatalogGetter
+		asnLookup         ASNLookup
+		customHashes      []string
+		customRules       map[string]map[string]string
+	}{
+		{
+			name:              "#24 — Domain CR Block + IP CR Allow → Blocked (IP allow inert, nil Res)",
+			tableRef:          "#24",
+			domainResults:     []model.StageResult{domainCustomBlockResult()},
+			blockedServiceIDs: []string{},
+			customHashes:      []string{"h_allow_ip"},
+			customRules: map[string]map[string]string{
+				"h_allow_ip": {"action": ACTION_ALLOW, "value": allowIP, "syntax": "ip4_addr"},
+			},
+		},
+		{
+			name:              "#25 — Domain CR Block + SVC Block + IP CR Allow → Blocked (IP allow inert, nil Res)",
+			tableRef:          "#25",
+			domainResults:     []model.StageResult{domainCustomBlockResult()},
+			blockedServiceIDs: []string{"google"},
+			catalog:           staticCatalog{cat: googleCatalogWithASN(asn)},
+			asnLookup:         staticASNLookup{asn: asn},
+			customHashes:      []string{"h_allow_ip"},
+			customRules: map[string]map[string]string{
+				"h_allow_ip": {"action": ACTION_ALLOW, "value": allowIP, "syntax": "ip4_addr"},
+			},
+		},
+		{
+			name:     "#26 — BL Block + Domain CR Block + IP CR Allow → Blocked (IP allow inert, nil Res)",
+			tableRef: "#26",
+			domainResults: []model.StageResult{
+				domainBlocklistResult(),
+				domainCustomBlockResult(),
+			},
+			blockedServiceIDs: []string{},
+			customHashes:      []string{"h_allow_ip"},
+			customRules: map[string]map[string]string{
+				"h_allow_ip": {"action": ACTION_ALLOW, "value": allowIP, "syntax": "ip4_addr"},
+			},
+		},
+		{
+			name:     "#27 — BL Block + Domain CR Block + SVC Block + IP CR Allow → Blocked (IP allow inert, nil Res)",
+			tableRef: "#27",
+			domainResults: []model.StageResult{
+				domainBlocklistResult(),
+				domainCustomBlockResult(),
+			},
+			blockedServiceIDs: []string{"google"},
+			catalog:           staticCatalog{cat: googleCatalogWithASN(asn)},
+			asnLookup:         staticASNLookup{asn: asn},
+			customHashes:      []string{"h_allow_ip"},
+			customRules: map[string]map[string]string{
+				"h_allow_ip": {"action": ACTION_ALLOW, "value": allowIP, "syntax": "ip4_addr"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCache := new(mocks.Cache)
+			mockCache.On("GetProfileServicesBlocked", mock.Anything, profileID).
+				Return(tt.blockedServiceIDs, nil).Maybe()
+			mockCache.On("GetCustomRulesHashes", mock.Anything, profileID).
+				Return(tt.customHashes, nil)
+			for hash, rule := range tt.customRules {
+				mockCache.On("GetCustomRulesHash", mock.Anything, hash).
+					Return(rule, nil).Maybe()
+			}
+
+			ipFilter := NewIPFilter(&proxy.Proxy{}, mockCache, tt.catalog, tt.asnLookup)
+
+			reqCtx := newTestReqCtx(t, profileID)
+			reqCtx.PartialFilteringResults = append(
+				reqCtx.PartialFilteringResults, tt.domainResults...,
+			)
+			reqCtx.FilterResult = model.FilterResult{Status: model.StatusBlocked}
+
+			// dctx.Res is nil — domain blocked, no upstream resolution.
+			req := new(dns.Msg)
+			req.SetQuestion("blocked.example.com.", dns.TypeA)
+			dnsCtx := &proxy.DNSContext{Req: req, Res: nil}
+
+			err := ipFilter.Execute(reqCtx, dnsCtx)
+			assert.NoError(t, err)
+
+			// With nil Res, both sub-filters return DecisionNone even though
+			// an IP allow rule is configured. getFinalFilteringResult([None, None])
+			// returns Processed — the server postResolve guard must prevent
+			// this call to preserve the domain block.
+			assert.Equal(t, model.StatusProcessed, reqCtx.FilterResult.Status,
+				"table %s: IP phase with nil Res must return Processed even with IP allow configured (server guards this)", tt.tableRef)
+			assert.Empty(t, reqCtx.FilterResult.Reasons,
+				"table %s: no reasons expected — IP allow rule cannot match without response IPs", tt.tableRef)
+
+			mockCache.AssertExpectations(t)
+		})
+	}
+}
+
 // TestIPFilter_PhaseIndependence_PartialResultsGrow verifies that IP-phase
 // results are appended to PartialFilteringResults for observability even though
 // they are aggregated separately for the final decision.
