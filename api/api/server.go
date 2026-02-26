@@ -87,6 +87,11 @@ func (s *APIServer) setupMiddlewares() {
 			healthcheck.Config{
 				LivenessEndpoint:  "/health/live",
 				ReadinessEndpoint: "/health/ready",
+				ReadinessProbe: func(c *fiber.Ctx) bool {
+					ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
+					defer cancel()
+					return s.Db.GetClient().Ping(ctx, nil) == nil
+				},
 			},
 		),
 	)
@@ -179,7 +184,7 @@ func (s *APIServer) RegisterRoutes() {
 	profiles.Patch("/:id", middleware.NewLimit(20, 1*time.Minute), s.updateProfile())
 
 	// Query logs endpoints
-	profiles.Get("/:id/logs", middleware.NewLimit(50, 1*time.Minute), s.getProfileQueryLogs())
+	profiles.Get("/:id/logs", middleware.NewLimit(500, 1*time.Minute), s.getProfileQueryLogs())
 	profiles.Get("/:id/logs/download", middleware.NewLimit(20, 1*time.Minute), s.downloadProfileQueryLogs())
 	profiles.Delete("/:id/logs", middleware.NewLimit(20, 1*time.Minute), s.deleteProfileQueryLogs())
 

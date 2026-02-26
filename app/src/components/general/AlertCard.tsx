@@ -62,7 +62,7 @@ const AlertCard: React.FC<AlertCardProps> = ({
             <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 absolute top-4 right-4 p-0 hover:bg-current/10 cursor-pointer"
+                className="h-10 w-10 absolute top-2 right-2 p-0 hover:bg-current/10 cursor-pointer"
                 style={{ color: "var(--alert-card-icon)" }}
                 onClick={handleClose}
                 aria-label="Close"

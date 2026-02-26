@@ -57,9 +57,10 @@ type SentryConfig struct {
 
 // ServerConfig represents the server configuration
 type ServerConfig struct {
-	Name           string
-	DnsCheckDomain string
-	DnsCheckPort   string
+	Name                    string
+	DnsCheckDomain          string
+	DnsCheckPort            string
+	ProfileSettingsCacheTTL time.Duration
 }
 
 // ServicesConfig configures ASN-based services blocking.
@@ -100,6 +101,12 @@ type DoTConfig struct {
 // DoQConfig represents the DNS-over-QUIC configuration
 type DoQConfig struct {
 	ListenAddr int
+}
+
+// getEnvBool returns true if the environment variable is set to "true" or "1" (case-insensitive).
+func getEnvBool(env string) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(env)))
+	return v == "true" || v == "1"
 }
 
 // GetEnvInt returns the integer value of an environment variable
@@ -151,6 +158,36 @@ func LoadUpstreamConfig(upstreamsEnv, defaultRecursorEnv string) (*UpstreamConfi
 		Upstreams: upstreams,
 		Default:   defaultRecursor,
 	}, nil
+}
+
+// loadDNSCacheConfig reads DNS response cache settings from environment variables.
+func loadDNSCacheConfig() *DNSCacheConfig {
+	cfg := &DNSCacheConfig{
+		Enabled:    getEnvBool("DNS_CACHE_ENABLED"),
+		Size:       256000,
+		Optimistic: getEnvBool("DNS_CACHE_OPTIMISTIC"),
+	}
+	if v := os.Getenv("DNS_CACHE_SIZE"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+			cfg.Size = parsed
+		}
+	}
+	if v := os.Getenv("DNS_CACHE_SIZE_BYTES"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed >= 0 {
+			cfg.SizeBytes = parsed
+		}
+	}
+	if v := os.Getenv("DNS_CACHE_MIN_TTL"); v != "" {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			cfg.MinTTL = uint32(parsed)
+		}
+	}
+	if v := os.Getenv("DNS_CACHE_MAX_TTL"); v != "" {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			cfg.MaxTTL = uint32(parsed)
+		}
+	}
+	return cfg
 }
 
 // New creates a new Config instance
@@ -225,38 +262,15 @@ func New() (*Config, error) {
 		dnsCheckDomain = "test.moddns.net"
 	}
 
-	// DNS response cache (vendor / AdGuard layer)
-	dnsCacheEnabled := false
-	if v := strings.ToLower(strings.TrimSpace(os.Getenv("DNS_CACHE_ENABLED"))); v == "true" || v == "1" {
-		dnsCacheEnabled = true
-	}
-	dnsCacheSize := 256000
-	if v := os.Getenv("DNS_CACHE_SIZE"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			dnsCacheSize = parsed
+	dnsCacheCfg := loadDNSCacheConfig()
+	// Profile settings in-memory cache TTL (default 30s, "0" disables expiration)
+	profileSettingsCacheTTL := 30 * time.Second
+	if v := os.Getenv("PROFILE_SETTINGS_CACHE_TTL"); v != "" {
+		parsed, err := time.ParseDuration(v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid PROFILE_SETTINGS_CACHE_TTL %q: %w", v, err)
 		}
-	}
-	dnsCacheSizeBytes := 0
-	if v := os.Getenv("DNS_CACHE_SIZE_BYTES"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed >= 0 {
-			dnsCacheSizeBytes = parsed
-		}
-	}
-	var dnsCacheMinTTL uint32
-	if v := os.Getenv("DNS_CACHE_MIN_TTL"); v != "" {
-		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
-			dnsCacheMinTTL = uint32(parsed)
-		}
-	}
-	var dnsCacheMaxTTL uint32
-	if v := os.Getenv("DNS_CACHE_MAX_TTL"); v != "" {
-		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
-			dnsCacheMaxTTL = uint32(parsed)
-		}
-	}
-	dnsCacheOptimistic := false
-	if v := strings.ToLower(strings.TrimSpace(os.Getenv("DNS_CACHE_OPTIMISTIC"))); v == "true" || v == "1" {
-		dnsCacheOptimistic = true
+		profileSettingsCacheTTL = parsed
 	}
 
 	// Get AdGuard log level (default to "info" if not set or invalid)
@@ -284,23 +298,17 @@ func New() (*Config, error) {
 
 	return &Config{
 		Server: &ServerConfig{
-			Name:           os.Getenv("SERVER_NAME"),
-			DnsCheckDomain: dnsCheckDomain,
-			DnsCheckPort:   os.Getenv("DNS_CHECK_PORT"),
+			Name:                    os.Getenv("SERVER_NAME"),
+			DnsCheckDomain:          dnsCheckDomain,
+			DnsCheckPort:            os.Getenv("DNS_CHECK_PORT"),
+			ProfileSettingsCacheTTL: profileSettingsCacheTTL,
 		},
 		Services: &ServicesConfig{
 			CatalogPath:        servicesCatalogPath,
 			CatalogReloadEvery: servicesCatalogReloadEvery,
 			GeoIPASNDBPath:     geoIPASNDBPath,
 		},
-		DNSCache: &DNSCacheConfig{
-			Enabled:    dnsCacheEnabled,
-			Size:       dnsCacheSize,
-			SizeBytes:  dnsCacheSizeBytes,
-			MinTTL:     dnsCacheMinTTL,
-			MaxTTL:     dnsCacheMaxTTL,
-			Optimistic: dnsCacheOptimistic,
-		},
+		DNSCache:           dnsCacheCfg,
 		TrustedProxies:     trustedProxies,
 		ProfileIDMinLength: profileIdMinLen,
 		Cache: &cache.Config{
@@ -311,11 +319,11 @@ func New() (*Config, error) {
 			FailoverPassword:      os.Getenv("CACHE_FAILOVER_PASSWORD"),
 			FailoverUsername:      os.Getenv("CACHE_FAILOVER_USERNAME"),
 			MasterName:            os.Getenv("CACHE_MASTER_NAME"),
-			TLSEnabled:            os.Getenv("CACHE_TLS_ENABLED") == "true",
+			TLSEnabled:            getEnvBool("CACHE_TLS_ENABLED"),
 			CertFile:              os.Getenv("CACHE_CERT_FILE"),
 			KeyFile:               os.Getenv("CACHE_KEY_FILE"),
 			CACertFile:            os.Getenv("CACHE_CA_CERT_FILE"),
-			TLSInsecureSkipVerify: os.Getenv("CACHE_TLS_INSECURE_SKIP_VERIFY") == "true",
+			TLSInsecureSkipVerify: getEnvBool("CACHE_TLS_INSECURE_SKIP_VERIFY"),
 		},
 		CollectorQueryLogs:  collectorQueryLogsCfg,
 		CollectorStatistics: collectorStatisticsCfg,

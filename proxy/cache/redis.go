@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ivpn/dns/libs/cache"
+	"github.com/ivpn/dns/proxy/model"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
@@ -128,4 +129,83 @@ func (c *RedisCache) GetCustomRulesHash(ctx context.Context, hashId string) (map
 		return nil, err
 	}
 	return cmd.Val(), nil
+}
+
+// GetProfileSettingsBatch fetches privacy, logs, DNSSEC, and advanced settings
+// for a profile in a single Redis pipeline round-trip (1 RTT instead of 4).
+func (c *RedisCache) GetProfileSettingsBatch(ctx context.Context, profileId string) (*model.ProfileSettings, error) {
+	if profileId == "" {
+		return nil, fmt.Errorf("profile ID cannot be empty")
+	}
+
+	privacyKey := "settings:" + profileId + ":privacy"
+	logsKey := "settings:" + profileId + ":logs"
+	dnssecKey := "settings:" + profileId + ":security:dnssec"
+	advancedKey := "settings:" + profileId + ":advanced"
+
+	pipe := c.client.Pipeline()
+	privacyCmd := pipe.HGetAll(ctx, privacyKey)
+	logsCmd := pipe.HGetAll(ctx, logsKey)
+	dnssecCmd := pipe.HGetAll(ctx, dnssecKey)
+	advancedCmd := pipe.HGetAll(ctx, advancedKey)
+
+	_, err := pipe.Exec(ctx)
+	// Pipeline Exec returns the error of the first failed command, but
+	// individual commands still hold their own results/errors. We only
+	// treat a total pipeline failure (e.g. connection lost) as fatal.
+	if err != nil && err != redis.Nil {
+		// If all commands failed with the same error, it's a connection-level
+		// failure (e.g. TCP reset, auth error) — return it so the caller can
+		// log the real cause instead of a misleading "profile not found".
+		if privacyCmd.Err() == err && logsCmd.Err() == err &&
+			dnssecCmd.Err() == err && advancedCmd.Err() == err {
+			return nil, fmt.Errorf("redis pipeline failed: %w", err)
+		}
+		// Otherwise it's a partial failure — handle per-command below.
+		log.Warn().Err(err).Msg("Redis pipeline partial error, checking individual commands")
+	}
+
+	result := &model.ProfileSettings{}
+
+	// Privacy
+	switch {
+	case privacyCmd.Err() != nil:
+		result.PrivacyErr = privacyCmd.Err()
+	case len(privacyCmd.Val()) == 0:
+		result.PrivacyErr = fmt.Errorf("No [privacy] settings found for profile %s", profileId)
+	default:
+		result.Privacy = privacyCmd.Val()
+	}
+
+	// Logs
+	switch {
+	case logsCmd.Err() != nil:
+		result.LogsErr = logsCmd.Err()
+	case len(logsCmd.Val()) == 0:
+		result.LogsErr = fmt.Errorf("No [logs] settings found for profile %s", profileId)
+	default:
+		result.Logs = logsCmd.Val()
+	}
+
+	// DNSSEC
+	switch {
+	case dnssecCmd.Err() != nil:
+		result.DNSSECErr = dnssecCmd.Err()
+	case len(dnssecCmd.Val()) == 0:
+		result.DNSSECErr = fmt.Errorf("No [security dnssec] settings found for profile %s", profileId)
+	default:
+		result.DNSSEC = dnssecCmd.Val()
+	}
+
+	// Advanced
+	switch {
+	case advancedCmd.Err() != nil:
+		result.AdvancedErr = advancedCmd.Err()
+	case len(advancedCmd.Val()) == 0:
+		result.AdvancedErr = fmt.Errorf("No [advanced] settings found for profile %s", profileId)
+	default:
+		result.Advanced = advancedCmd.Val()
+	}
+
+	return result, nil
 }

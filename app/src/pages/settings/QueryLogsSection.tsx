@@ -98,7 +98,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
                                         type="button"
                                         aria-label="Retention period information"
                                         data-testid="retention-info-trigger"
-                                        className="p-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tailwind-colors-rdns-600)] text-[var(--tailwind-colors-slate-300)] hover:text-[var(--tailwind-colors-slate-50)] transition-colors"
+                                        className="min-w-10 min-h-10 flex items-center justify-center rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tailwind-colors-rdns-600)] text-[var(--tailwind-colors-slate-300)] hover:text-[var(--tailwind-colors-slate-50)] transition-colors"
                                     >
                                         <Info size={16} strokeWidth={2} />
                                     </button>

@@ -28,11 +28,18 @@ linters:
           - ineffassign
           - staticcheck
         path: _test\.go
+      - linters:
+          - gosec
+        text: "G115"
+        path: service/apple/pkcs7/
     paths:
       - third_party$
       - builtin$
       - examples$
   settings:
+    gosec:
+      excludes:
+        - G117  # struct fields matching secret patterns (Password, AuthToken, Secret) – expected in auth APIs
     staticcheck:
       checks:
         - all        # enable all staticcheck checks

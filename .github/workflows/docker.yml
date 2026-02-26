@@ -2,7 +2,7 @@ name: Docker build
 
 on:
   pull_request:
-    branches: ["main", "develop"]
+    branches: ["main", "develop", "release/*"]
 
 jobs:
   docker:

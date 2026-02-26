@@ -141,8 +141,6 @@ func main() {
 	<-signals
 	close(quit)
 	shutdown(server, emitterI, sentryWriter)
-
-	os.Exit(0)
 }
 
 // safelyRun wraps each goroutine with panic recovery to ensure the application continues even if a panic occurs

@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     p.startsWith('/signup/') ||
     p === '/tos' ||
     p === '/privacy' ||
-    p === '/standalone-faq' ||
+    p === '/faq' ||
     p === '/reset-password' ||
     p.startsWith('/reset-password/') ||
     p.startsWith('/verify/email/') ||
@@ -205,7 +205,7 @@ async function rootLoader() {
       return { account: null, profiles: [] };
     }
     console.error('Root loader error (unhandled):', error);
-    throw redirect('/login');
+    return { account: null, profiles: [] };
   }
 }
 
@@ -237,10 +237,6 @@ async function profilesOnlyLoader() {
       profiles,
     };
   } catch (error: unknown) {
-
-
-
-
     if (error instanceof Response) throw error;
     const err = error as Record<string, unknown>;
     const status = (err?.response as Record<string, unknown>)?.status ?? err?.status ?? (error instanceof Error && (error as Record<string, unknown>).status);
@@ -257,7 +253,7 @@ async function profilesOnlyLoader() {
       return { account: null, profiles: [] };
     }
     console.error('Profiles loader error (unhandled):', error);
-    throw redirect('/login');
+    return { account: null, profiles: [] };
   }
 }
 
@@ -347,8 +343,6 @@ function ProtectedLayout() {
         return 'Account preferences';
       case '/mobileconfig':
         return 'Mobile configuration';
-      case '/faq':
-        return 'FAQ';
       default:
         if (location.pathname.startsWith('/setup/')) return 'DNS Setup';
         if (location.pathname.startsWith('/blocklists/')) return 'Blocklists';
@@ -377,90 +371,90 @@ function ProtectedLayout() {
 
   return (
     <>
-    <AppLayout>
-      {navDesktop && <div data-testid="persistent-sidebar"><NavigationMenu offsetLeft={shellOffset} /></div>}
+      <AppLayout>
+        {navDesktop && <div data-testid="persistent-sidebar"><NavigationMenu offsetLeft={shellOffset} /></div>}
 
-      {isDesktop && connectionStatusVisible && (
+        {isDesktop && connectionStatusVisible && (
+          <div
+            ref={connectionHeaderRef}
+            className="fixed top-0 right-0 z-50 transition-all duration-500"
+            style={{ left: `${sidebarWidth + shellOffset}px`, right: `${headerRightOffset + shellOffset}px` }}
+          >
+            <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
+              <ConnectionStatusHeader />
+            </div>
+          </div>
+        )}
+
         <div
-          ref={connectionHeaderRef}
-          className="fixed top-0 right-0 z-50 transition-all duration-500"
-          style={{ left: `${sidebarWidth + shellOffset}px`, right: `${headerRightOffset + shellOffset}px` }}
+          ref={mainHeaderRef}
+          className={`fixed right-0 z-50 transition-all duration-500 ${isDesktop ? '' : 'left-0'}`}
+          style={isDesktop ? {
+            top: `${headerTopOffset}px`,
+            left: `${sidebarWidth + shellOffset}px`,
+            right: `${headerRightOffset + shellOffset}px`
+          } : {
+            top: '0px',
+            left: '0px',
+            right: '0px'
+          }}
         >
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
-            <ConnectionStatusHeader />
+            <Header
+              profiles={profiles || []}
+              showProfileDropdown={showProfileDropdown}
+              showLogoutButton={showLogoutButton}
+              showDialogTrigger={showDialogTrigger}
+              currentPageName={currentPageName}
+              showConnectionStatusRestoreButton={shouldShowConnectionStatusRestore}
+              onRestoreConnectionStatus={() => setConnectionStatusVisible(true)}
+            />
+          </div>
+        </div>
+
+        <div
+          data-testid="app-content"
+          className="transition-all duration-200 bg-[var(--shadcn-ui-app-background)] w-full overflow-x-hidden box-border"
+          style={isDesktop ? {
+            paddingTop: 'var(--app-header-stack, 64px)',
+            marginLeft: `${sidebarWidth + shellOffset}px`,
+            width: `calc(100vw - ${sidebarWidth + shellOffset}px - ${headerRightOffset + shellOffset}px)`,
+            minHeight: 'calc(100vh - (var(--app-header-stack, 64px)))',
+            maxWidth: '100vw'
+          } : {
+            paddingTop: 'var(--app-header-stack, 110px)',
+            paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
+            paddingLeft: '0px',
+            marginLeft: '0px',
+            width: '100%',
+            minHeight: 'calc(100dvh - 72px - env(safe-area-inset-bottom, 0px))',
+            maxWidth: '100vw'
+          }}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
+            <Outlet />
+          </div>
+        </div>
+
+        {!navDesktop && <BottomNav onMoreClick={handleMoreClick} />}
+      </AppLayout>
+
+      {/* Mobile nav overlay – rendered outside AppLayout to avoid stacking context / overflow issues */}
+      {!navDesktop && (
+        <div className={`fixed inset-0 z-[100] ${mobileNavOpen ? '' : 'pointer-events-none'}`} data-testid="nav-overlay-wrapper">
+          <div
+            data-testid="nav-backdrop"
+            className={`fixed inset-0 bg-black/50 cursor-pointer transition-opacity duration-300 ${mobileNavOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <div
+            className={`fixed inset-y-0 left-0 w-[80%] max-w-[320px] bg-[var(--variable-collection-surface)] shadow-lg transition-transform duration-300 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}`}
+            data-testid="nav-overlay-panel"
+          >
+            <NavigationMenu isMobile={true} onClose={() => setMobileNavOpen(false)} />
           </div>
         </div>
       )}
-
-      <div
-        ref={mainHeaderRef}
-        className={`fixed right-0 z-50 transition-all duration-500 ${isDesktop ? '' : 'left-0'}`}
-        style={isDesktop ? {
-          top: `${headerTopOffset}px`,
-          left: `${sidebarWidth + shellOffset}px`,
-          right: `${headerRightOffset + shellOffset}px`
-        } : {
-          top: '0px',
-          left: '0px',
-          right: '0px'
-        }}
-      >
-        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
-          <Header
-            profiles={profiles || []}
-            showProfileDropdown={showProfileDropdown}
-            showLogoutButton={showLogoutButton}
-            showDialogTrigger={showDialogTrigger}
-            currentPageName={currentPageName}
-            showConnectionStatusRestoreButton={shouldShowConnectionStatusRestore}
-            onRestoreConnectionStatus={() => setConnectionStatusVisible(true)}
-          />
-        </div>
-      </div>
-
-      <div
-        data-testid="app-content"
-        className="transition-all duration-200 bg-[var(--shadcn-ui-app-background)] w-full overflow-x-hidden box-border"
-        style={isDesktop ? {
-          paddingTop: 'var(--app-header-stack, 64px)',
-          marginLeft: `${sidebarWidth + shellOffset}px`,
-          width: `calc(100vw - ${sidebarWidth + shellOffset}px - ${headerRightOffset + shellOffset}px)`,
-          minHeight: 'calc(100vh - (var(--app-header-stack, 64px)))',
-          maxWidth: '100vw'
-        } : {
-          paddingTop: 'var(--app-header-stack, 110px)',
-          paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
-          paddingLeft: '0px',
-          marginLeft: '0px',
-          width: '100%',
-          minHeight: 'calc(100dvh - 72px - env(safe-area-inset-bottom, 0px))',
-          maxWidth: '100vw'
-        }}
-      >
-        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
-          <Outlet />
-        </div>
-      </div>
-
-      {!navDesktop && <BottomNav onMoreClick={handleMoreClick} />}
-    </AppLayout>
-
-    {/* Mobile nav overlay – rendered outside AppLayout to avoid stacking context / overflow issues */}
-    {!navDesktop && (
-      <div className={`fixed inset-0 z-[100] ${mobileNavOpen ? '' : 'pointer-events-none'}`} data-testid="nav-overlay-wrapper">
-        <div
-          data-testid="nav-backdrop"
-          className={`fixed inset-0 bg-black/50 cursor-pointer transition-opacity duration-300 ${mobileNavOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-          onClick={() => setMobileNavOpen(false)}
-        />
-        <div
-          className={`fixed inset-y-0 left-0 w-[80%] max-w-[320px] bg-[var(--variable-collection-surface)] shadow-lg transition-transform duration-300 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}`}
-          data-testid="nav-overlay-panel"
-        >
-          <NavigationMenu isMobile={true} onClose={() => setMobileNavOpen(false)} />
-        </div>
-      </div>
-    )}
     </>
   );
 }
@@ -509,18 +503,15 @@ function QueryLogsWithLoader() {
 // LoginWrapper handles login and redirects after success
 function LoginWrapper() {
   const { isAuthenticated } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as Record<string, unknown>)?.from as Record<string, unknown> | undefined;
   const fromPath = from?.pathname as string || "/home";
 
   React.useEffect(() => {
-    // Only redirect if user is authenticated AND they came from another protected page
-    // Don't redirect if they're already on the login page (let Login component handle its own navigation)
-    if (isAuthenticated && location.state?.from) {
+    if (isAuthenticated) {
       navigate("/home", { replace: true });
     }
-  }, [isAuthenticated, navigate, fromPath, location.state]);
+  }, [isAuthenticated, navigate, fromPath]);
 
   // Always render the Login component to avoid black screen issues
   // The redirect will happen in useEffect when authentication state updates
@@ -566,7 +557,7 @@ const router = createBrowserRouter([
           { path: "signup/:subid", element: <Suspense fallback={<div />}><Signup /></Suspense> },
           { path: "tos", element: <Suspense fallback={<div />}><TermsOfService /></Suspense> },
           { path: "privacy", element: <Suspense fallback={<div />}><PrivacyPolicy /></Suspense> },
-          { path: "standalone-faq", element: <Suspense fallback={<div />}><FAQ /></Suspense> },
+          { path: "faq", element: <Suspense fallback={<div />}><FAQ /></Suspense> },
           { path: "reset-password", element: <Suspense fallback={<div />}><PasswordReset /></Suspense> },
           { path: "reset-password/:token", element: <Suspense fallback={<div />}><PasswordResetConfirm /></Suspense> },
           { path: "short/:code", element: <Suspense fallback={<div />}><MobileconfigDownload /></Suspense> },
@@ -587,7 +578,6 @@ const router = createBrowserRouter([
           { loader: rootLoader, path: "account-preferences", element: <AccountPreferencesWithLoader /> },
           { loader: rootLoader, path: "mobileconfig", element: <MobileconfigWithLoader /> },
           { loader: rootLoader, path: "query-logs", element: <QueryLogsWithLoader /> },
-          { path: "faq", element: <Suspense fallback={<div />}><FAQ /></Suspense> },
         ],
       },
 

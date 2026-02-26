@@ -78,7 +78,8 @@ export const formatUpdatedRelative = (isoDate?: string): string => {
 
 export default function MainContentSection(): JSX.Element {
     const [activeTab, setActiveTab] = useState("blocklists");
-    const [showAlert, setShowAlert] = useState(true);
+    const blocklistsAlertDismissed = useAppStore((state) => state.blocklistsAlertDismissed);
+    const setBlocklistsAlertDismissed = useAppStore((state) => state.setBlocklistsAlertDismissed);
     const [blocklists, setBlocklists] = useState<ModelBlocklist[]>([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
@@ -299,7 +300,7 @@ export default function MainContentSection(): JSX.Element {
 
                         {/* Alert Card */}
                         <section className="w-full">
-                            {showAlert && (
+                            {!blocklistsAlertDismissed && (
                                 <AlertCard
                                     description={
                                         <>
@@ -328,7 +329,7 @@ export default function MainContentSection(): JSX.Element {
                                             </div>
                                         </>
                                     }
-                                    onClose={() => setShowAlert(false)}
+                                    onClose={() => setBlocklistsAlertDismissed(false)}
                                     className="w-full"
                                 />
                             )}

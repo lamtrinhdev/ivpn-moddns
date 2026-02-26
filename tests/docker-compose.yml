@@ -16,6 +16,12 @@ services:
       - ./bootstrap/geolite/:/opt/geo:ro
     env_file:
       - ./config/api.env
+    healthcheck:
+      test: ["CMD", "/bin/healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   dnsproxy:
     build:
