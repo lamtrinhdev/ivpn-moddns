@@ -87,7 +87,7 @@ type APIConfig struct {
 type EmailSenderConfig struct {
 	SenderType string
 	InboxId    string
-	AuthToken  string
+	AuthToken  string //nolint:gosec // G117 - intentional sensitive field
 }
 
 // New creates a new Config instance

@@ -14,7 +14,7 @@ type TotpSettings struct {
 }
 
 type TOTPNew struct {
-	Secret  string `json:"secret"`
+	Secret  string `json:"secret"` //nolint:gosec // G117 - intentional sensitive field
 	Account string `json:"account"`
 	URI     string `json:"uri"`
 }

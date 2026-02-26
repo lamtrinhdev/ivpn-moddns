@@ -13,7 +13,7 @@ import (
 
 type registerAccountBody struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"password,required"`
+	Password string `json:"password" validate:"password,required"` //nolint:gosec // G117 - intentional sensitive field
 	SubID    string `json:"subid" validate:"required,uuid4"`
 }
 

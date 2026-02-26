@@ -123,7 +123,7 @@ func (m *Mailpit) sendEmail(ctx context.Context, email string, reqBody mailpitSe
 	// Mailpit does not require authentication by default, but if needed:
 	// req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", m.authToken))
 
-	res, err := m.httpClient.Do(req) //nolint:gosec // G704 - request to configured internal mail endpoint
+	res, err := m.httpClient.Do(req) //nolint:gosec // G704 - URL is internally configured
 	if err != nil {
 		log.Err(err).Str("email", email).Msg("Mailpit: Failed to send HTTP request")
 		return err
