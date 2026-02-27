@@ -377,7 +377,7 @@ func New() (*Config, error) {
 
 func loadRateLimitConfig() *RateLimitConfig {
 	cfg := &RateLimitConfig{
-		Enabled:         os.Getenv("RATELIMIT_ENABLED") == "true",
+		Enabled:         os.Getenv("RATELIMIT_ENABLED") != "false",
 		PerIPRate:       100,
 		PerIPBurst:      200,
 		PerProfileRate:  300,
