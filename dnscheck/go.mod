@@ -1,8 +1,6 @@
 module github.com/dnscheck
 
-go 1.23.0
-
-toolchain go1.23.2
+go 1.25.7
 
 require (
 	github.com/go-playground/validator/v10 v10.25.0
