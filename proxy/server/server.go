@@ -323,8 +323,8 @@ func (s *Server) RequestHandler() func(p *proxy.Proxy, dctx *proxy.DNSContext) (
 			}
 			// For cache hits, ResponseHandler is skipped by the vendor.
 			// Run IP filtering, emit logs/stats, and respond manually.
-			if dctx.CachedUpstreamAddr != "" {
-				reqLogger.Trace().Str("cached_upstream", dctx.CachedUpstreamAddr).Msg("Cache hit — running postResolve")
+			if addr, ok := cachedUpstreamAddr(dctx); ok {
+				reqLogger.Trace().Str("cached_upstream", addr).Msg("Cache hit — running postResolve")
 				s.postResolve(reqCtx, dctx)
 			}
 		} else if s.Proxy.ResponseHandler != nil {
@@ -490,4 +490,20 @@ func (s *Server) refusedResponse(req *dns.Msg) *dns.Msg {
 	resp := new(dns.Msg)
 	resp.SetRcode(req, dns.RcodeRefused)
 	return resp
+}
+
+// cachedUpstreamAddr returns the upstream address and true if the DNS response
+// was served from the vendor cache. It uses QueryStatistics introduced in
+// dnsproxy v0.78.0 (replacing the removed CachedUpstreamAddr field).
+func cachedUpstreamAddr(dctx *proxy.DNSContext) (string, bool) {
+	stats := dctx.QueryStatistics()
+	if stats == nil {
+		return "", false
+	}
+	for _, s := range stats.Main() {
+		if s.IsCached {
+			return s.Address, true
+		}
+	}
+	return "", false
 }
