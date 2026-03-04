@@ -18,6 +18,7 @@ import (
 	"github.com/ivpn/dns/proxy/model"
 	"github.com/ivpn/dns/proxy/requestcontext"
 	"github.com/miekg/dns"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/rs/zerolog/log"
 )
 
@@ -32,15 +33,16 @@ type RequestManager interface {
 }
 
 type Server struct {
-	Config            *config.Config
-	Proxy             *proxy.Proxy // service.Interface
-	Upstreams         map[string]*proxy.CustomUpstreamConfig
-	DomainFilter      filter.Filter
-	IPFilter          filter.Filter
-	Cache             cache.Cache
-	InMemoryCache     memory.MemoryCache
-	CollectorChannels map[string]channel.CollectorChannel
-	LoggerFactory     logging.FactoryInterface
+	Config                *config.Config
+	Proxy                 *proxy.Proxy // service.Interface
+	Upstreams             map[string]*proxy.CustomUpstreamConfig
+	DomainFilter          filter.Filter
+	IPFilter              filter.Filter
+	Cache                 cache.Cache
+	InMemoryCache         memory.MemoryCache
+	ProfileSettingsCache  *gocache.Cache
+	CollectorChannels     map[string]channel.CollectorChannel
+	LoggerFactory         logging.FactoryInterface
 }
 
 var _ RequestManager = (*Server)(nil)
@@ -64,13 +66,17 @@ func NewServer(serverConfig *config.Config, collectorChannels map[string]channel
 	// Initialize logging factory
 	loggerFactory := logging.NewDefaultFactory()
 
+	// In-memory profile settings cache to avoid Redis round-trips for warm profiles.
+	profileSettingsCache := gocache.New(serverConfig.Server.ProfileSettingsCacheTTL, 2*serverConfig.Server.ProfileSettingsCacheTTL)
+
 	server := &Server{
-		Config:            serverConfig,
-		Cache:             cache,
-		InMemoryCache:     memoryCache,
-		CollectorChannels: collectorChannels,
-		Upstreams:         make(map[string]*proxy.CustomUpstreamConfig, 0),
-		LoggerFactory:     loggerFactory,
+		Config:               serverConfig,
+		Cache:                cache,
+		InMemoryCache:        memoryCache,
+		ProfileSettingsCache: profileSettingsCache,
+		CollectorChannels:    collectorChannels,
+		Upstreams:            make(map[string]*proxy.CustomUpstreamConfig, 0),
+		LoggerFactory:        loggerFactory,
 	}
 
 	dnsProxy, err := server.newProxy(ProxyTypeAdguard, serverConfig)
@@ -112,19 +118,37 @@ func (s *Server) HandleBefore(p *proxy.Proxy, dctx *proxy.DNSContext) (err error
 		systemLogger.Err(errProfileIdNotProvided).Msg(errProfileIdNotProvided.Error())
 		return errProfileIdNotProvided
 	} else {
-		// check if profile id exists in cache; drop DNS request if not
-		prvSettings, err := s.Cache.GetProfilePrivacySettings(context.Background(), profileId)
-		if err != nil {
-			systemLogger.Err(err).Msg(errProfileIdNotFound.Error())
-			return errProfileIdNotFound
+		// Try in-memory profile settings cache first.
+		var settings *model.ProfileSettings
+		if cached, ok := s.ProfileSettingsCache.Get(profileId); ok {
+			settings = cached.(*model.ProfileSettings)
+		} else {
+			// Cache miss — fetch from Redis pipeline.
+			var fetchErr error
+			settings, fetchErr = s.Cache.GetProfileSettingsBatch(context.Background(), profileId)
+			if fetchErr != nil {
+				systemLogger.Err(fetchErr).Msg("Failed to fetch profile settings batch")
+				return errProfileIdNotFound
+			}
+			// Cache only successful fetches (profile exists).
+			if settings.PrivacyErr == nil {
+				s.ProfileSettingsCache.Set(profileId, settings, gocache.DefaultExpiration)
+			}
 		}
 
-		// Get logs settings to determine if logging should be enabled for this profile
-		logsSettings, err := s.Cache.GetProfileLogsSettings(context.Background(), profileId)
+		// Privacy settings are required — missing means profile doesn't exist.
+		if settings.PrivacyErr != nil {
+			systemLogger.Err(settings.PrivacyErr).Msg(errProfileIdNotFound.Error())
+			return errProfileIdNotFound
+		}
+		prvSettings := settings.Privacy
+
+		// Logs settings: default to enabled if unavailable.
+		logsSettings := settings.Logs
 		var loggingEnabled bool
-		if err != nil {
-			systemLogger.Err(err).Msg("Error getting profile logs settings, defaulting to enabled")
-			loggingEnabled = true // Default to enabled if we can't determine
+		if settings.LogsErr != nil {
+			systemLogger.Err(settings.LogsErr).Msg("Error getting profile logs settings, defaulting to enabled")
+			loggingEnabled = true
 		} else {
 			loggingEnabled, err = strconv.ParseBool(logsSettings["enabled"])
 			if err != nil {
@@ -153,9 +177,10 @@ func (s *Server) HandleBefore(p *proxy.Proxy, dctx *proxy.DNSContext) (err error
 			LogClientIPs: logClientIPs,
 		})
 
+		// DNSSEC settings: default to enabled if unavailable.
+		dnssecSettings := settings.DNSSEC
 		var dnssecEnabled, sendDoBit = true, true
-		dnssecSettings, err := s.Cache.GetProfileDNSSECSettings(context.Background(), profileId)
-		if err != nil {
+		if settings.DNSSECErr != nil {
 			reqLogger.Debug().Msg("DNSSEC settings not found, using default values")
 		} else {
 			dnssecEnabled, err = strconv.ParseBool(dnssecSettings["enabled"])
@@ -170,9 +195,10 @@ func (s *Server) HandleBefore(p *proxy.Proxy, dctx *proxy.DNSContext) (err error
 			}
 		}
 
-		advancedSettings, err := s.Cache.GetProfileAdvancedSettings(context.Background(), profileId)
+		// Advanced settings: default upstream if unavailable.
+		advancedSettings := settings.Advanced
 		upstreamName := s.Config.Upstream.Default
-		if err != nil {
+		if settings.AdvancedErr != nil {
 			reqLogger.Info().Str("upstream", s.Config.Upstream.Default).Msg("Advanced settings not found, using default values")
 		} else {
 			var recursorFound bool

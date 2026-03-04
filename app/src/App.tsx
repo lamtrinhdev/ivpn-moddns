@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     p.startsWith('/signup/') ||
     p === '/tos' ||
     p === '/privacy' ||
-    p === '/standalone-faq' ||
+    p === '/faq' ||
     p === '/reset-password' ||
     p.startsWith('/reset-password/') ||
     p.startsWith('/verify/email/') ||
@@ -198,7 +198,7 @@ async function rootLoader() {
       return { account: null, profiles: [] };
     }
     console.error('Root loader error (unhandled):', error);
-    throw redirect('/login');
+    return { account: null, profiles: [] };
   }
 }
 
@@ -230,10 +230,6 @@ async function profilesOnlyLoader() {
       profiles,
     };
   } catch (error: any) {
-
-
-
-
     if (error instanceof Response) throw error;
     const status = error?.response?.status ?? error?.status ?? (error instanceof Error && (error as any).status);
     if (status === 401 || status === 404) {
@@ -249,7 +245,7 @@ async function profilesOnlyLoader() {
       return { account: null, profiles: [] };
     }
     console.error('Profiles loader error (unhandled):', error);
-    throw redirect('/login');
+    return { account: null, profiles: [] };
   }
 }
 
@@ -337,8 +333,6 @@ function ProtectedLayout() {
         return 'Account preferences';
       case '/mobileconfig':
         return 'Mobile configuration';
-      case '/faq':
-        return 'FAQ';
       default:
         if (location.pathname.startsWith('/setup/')) return 'DNS Setup';
         if (location.pathname.startsWith('/blocklists/')) return 'Blocklists';
@@ -474,17 +468,13 @@ function QueryLogsWithLoader() {
 }// LoginWrapper handles login and redirects after success
 function LoginWrapper() {
   const { isAuthenticated } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
-  const from = (location.state as any)?.from?.pathname || "/home";
 
   React.useEffect(() => {
-    // Only redirect if user is authenticated AND they came from another protected page
-    // Don't redirect if they're already on the login page (let Login component handle its own navigation)
-    if (isAuthenticated && location.state?.from) {
+    if (isAuthenticated) {
       navigate("/home", { replace: true });
     }
-  }, [isAuthenticated, navigate, from, location.state]);
+  }, [isAuthenticated, navigate]);
 
   // Always render the Login component to avoid black screen issues
   // The redirect will happen in useEffect when authentication state updates
@@ -530,7 +520,7 @@ const router = createBrowserRouter([
           { path: "signup/:subid", element: <Signup /> },
           { path: "tos", element: <TermsOfService /> },
           { path: "privacy", element: <PrivacyPolicy /> },
-          { path: "standalone-faq", element: <FAQ /> },
+          { path: "faq", element: <FAQ /> },
           { path: "reset-password", element: <PasswordReset /> },
           { path: "reset-password/:token", element: <PasswordResetConfirm /> },
           { path: "short/:code", element: <MobileconfigDownload /> },
@@ -551,7 +541,6 @@ const router = createBrowserRouter([
           { loader: rootLoader, path: "account-preferences", element: <AccountPreferencesWithLoader /> },
           { loader: rootLoader, path: "mobileconfig", element: <MobileconfigWithLoader /> },
           { loader: rootLoader, path: "query-logs", element: <QueryLogsWithLoader /> },
-          { path: "faq", element: <FAQ /> },
         ],
       },
 

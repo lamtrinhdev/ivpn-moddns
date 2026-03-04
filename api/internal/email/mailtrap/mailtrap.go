@@ -163,7 +163,7 @@ func (m *Mailtrap) sendEmail(ctx context.Context, email string, sendEmailReq Sen
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", m.authToken))
 	req.Header.Add("Content-Type", "application/json")
 
-	res, err := m.httpClient.Do(req)
+	res, err := m.httpClient.Do(req) //nolint:gosec // G704 - request to configured internal mail endpoint
 	if err != nil {
 		log.Err(err).Str("email", email).Msg("Failed to send http request")
 		return err
