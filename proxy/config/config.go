@@ -28,6 +28,8 @@ type Config struct {
 	DoQ                 *DoQConfig
 	Sentry              *SentryConfig
 	Log                 *LogConfig
+	RateLimit           *RateLimitConfig
+	Metrics             *MetricsConfig
 	TrustedProxies      []string
 	ProfileIDMinLength  int
 }
@@ -40,6 +42,29 @@ type DNSCacheConfig struct {
 	MinTTL     uint32 // DNS_CACHE_MIN_TTL (default 0)
 	MaxTTL     uint32 // DNS_CACHE_MAX_TTL (default 0 = no cap)
 	Optimistic bool   // DNS_CACHE_OPTIMISTIC (default false)
+}
+
+// Rate limit response modes.
+const (
+	RateLimitResponseDrop   = "drop"
+	RateLimitResponseRefuse = "refuse"
+)
+
+// RateLimitConfig holds rate limiter settings.
+type RateLimitConfig struct {
+	PerIPEnabled       bool
+	PerIPRate          int
+	PerIPBurst         int
+	PerIPResponse      string // "drop" (default) or "refuse"
+	PerProfileEnabled  bool
+	PerProfileRate     int
+	PerProfileBurst    int
+	PerProfileResponse string // "drop" or "refuse" (default)
+}
+
+// MetricsConfig holds Prometheus metrics server settings.
+type MetricsConfig struct {
+	Port int
 }
 
 // LogConfig represents the logging configuration
@@ -296,6 +321,8 @@ func New() (*Config, error) {
 
 	cacheAddrs := strings.Split(os.Getenv("CACHE_ADDRESSES"), ",")
 
+	rlCfg := loadRateLimitConfig()
+
 	return &Config{
 		Server: &ServerConfig{
 			Name:                    os.Getenv("SERVER_NAME"),
@@ -358,5 +385,47 @@ func New() (*Config, error) {
 			AdGuardLogLevel: adguardLogLevel,
 			ZerologLevel:    zerologLevel,
 		},
+		RateLimit: rlCfg,
+		Metrics:   loadMetricsConfig(),
 	}, nil
+}
+
+func loadRateLimitConfig() *RateLimitConfig {
+	cfg := &RateLimitConfig{
+		PerIPEnabled:       getEnvBool("RATELIMIT_PER_IP_ENABLED"),
+		PerIPRate:          2000,
+		PerIPBurst:         4000,
+		PerIPResponse:      RateLimitResponseDrop,
+		PerProfileEnabled:  os.Getenv("RATELIMIT_PER_PROFILE_ENABLED") != "false",
+		PerProfileRate:     600,
+		PerProfileBurst:    1000,
+		PerProfileResponse: RateLimitResponseRefuse,
+	}
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("RATELIMIT_PER_IP_RESPONSE"))); v == RateLimitResponseDrop || v == RateLimitResponseRefuse {
+		cfg.PerIPResponse = v
+	}
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("RATELIMIT_PER_PROFILE_RESPONSE"))); v == RateLimitResponseDrop || v == RateLimitResponseRefuse {
+		cfg.PerProfileResponse = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_IP")); err == nil && v > 0 {
+		cfg.PerIPRate = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_IP_BURST")); err == nil && v > 0 {
+		cfg.PerIPBurst = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_PROFILE")); err == nil && v > 0 {
+		cfg.PerProfileRate = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_PROFILE_BURST")); err == nil && v > 0 {
+		cfg.PerProfileBurst = v
+	}
+	return cfg
+}
+
+func loadMetricsConfig() *MetricsConfig {
+	cfg := &MetricsConfig{Port: 9153}
+	if v, err := strconv.Atoi(os.Getenv("METRICS_PORT")); err == nil && v >= 0 {
+		cfg.Port = v
+	}
+	return cfg
 }
