@@ -30,7 +30,7 @@ type APIConfig struct {
 	JWTExpirationTime time.Duration
 	BasicAuthUser     string
 	BasicAuthPassword string
-	ApiAllowOrigin string
+	ApiAllowOrigin    string
 }
 
 // CacheConfig represents the cache configuration

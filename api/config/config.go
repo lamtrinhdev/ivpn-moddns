@@ -71,7 +71,7 @@ type APIConfig struct {
 	PSK                   string
 	SignupWebhookURL      string
 	SignupWebhookPSK      string
-	DisableRateLimit bool
+	DisableRateLimit      bool
 }
 
 type EmailSenderConfig struct {
@@ -210,7 +210,7 @@ func New() (*Config, error) {
 			PSK:                   os.Getenv("API_PSK"),
 			SignupWebhookURL:      os.Getenv("API_SIGNUP_WEBHOOK_URL"),
 			SignupWebhookPSK:      os.Getenv("API_SIGNUP_WEBHOOK_PSK"),
-			DisableRateLimit: parseBoolEnv("API_DISABLE_RATE_LIMIT"),
+			DisableRateLimit:      parseBoolEnv("API_DISABLE_RATE_LIMIT"),
 		},
 		DB: &store.Config{
 			DbURI:    os.Getenv("DB_URI"),

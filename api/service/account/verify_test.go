@@ -393,14 +393,14 @@ func (suite *EmailVerificationOTPSuite) TestVerifyPasswordReset() {
 	}
 
 	tests := []struct {
-		name              string
-		account           *model.Account
-		tokenInput        string
-		password          string
-		mfa               *model.MfaData
-		getByTokenErr     error
-		updateErr         error
-		expectedErrorPart string
+		name               string
+		account            *model.Account
+		tokenInput         string
+		password           string
+		mfa                *model.MfaData
+		getByTokenErr      error
+		updateErr          error
+		expectedErrorPart  string
 		expectTokenRemoved bool
 	}{
 		{

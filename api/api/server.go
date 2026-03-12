@@ -39,9 +39,9 @@ type APIServer struct {
 // NewServer inititiates database connection and sets up API endpoints
 func NewServer(config *config.Config, service service.Service, db db.Db, cache cache.Cache, idGen idgen.Generator, apiValidator *validator.APIValidator, email email.Mailer, shortener *urlshort.URLShortener) (*APIServer, error) {
 	app := fiber.New(fiber.Config{
-		ServerHeader:            "modDNS API",
-		AppName:                 "modDNS API",
-		BodyLimit: 1024 * 1024, // 1 MB
+		ServerHeader: "modDNS API",
+		AppName:      "modDNS API",
+		BodyLimit:    1024 * 1024, // 1 MB
 	})
 
 	server := &APIServer{
