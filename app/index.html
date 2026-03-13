@@ -14,7 +14,9 @@
     <meta name="apple-mobile-web-app-title" content="modDNS" />
     <meta name="format-detection" content="telephone=no" />
     <meta name="description" content="modDNS - DNS management dashboard" />
-    <!-- Early theme bootstrap to prevent flash. Sets data-shadcn-ui-mode before first paint; CSS vars handle background. -->
+    <!-- Early theme bootstrap to prevent initial white flash. This sets data-shadcn-ui-mode + body bg before first paint.
+         CSP: This inline script is whitelisted by sha256 hash in nginx.conf.
+         If you modify it, update the hash there or the browser will block it. -->
     <script>
       (function() {
         try {

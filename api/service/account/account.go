@@ -288,14 +288,16 @@ func (a *AccountService) SendResetPasswordEmail(ctx context.Context, email strin
 	if err != nil {
 		if errors.Is(err, dbErrors.ErrAccountNotFound) {
 			// Do not reveal whether the account exists.
-			log.Debug().Msg("Password reset requested for non-existent account")
+			log.Debug().Str("email", email).Msg("Password reset requested for non-existent account")
 			return nil
 		}
-		return err
+		log.Error().Err(err).Str("email", email).Msg("Error retrieving account for password reset")
+		return nil
 	}
 
 	if !acc.EmailVerified {
-		log.Warn().Msg("Password reset requested for unverified email")
+		log.Info().Str("email", email).Msg("Password reset requested for unverified email")
+		return nil
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
