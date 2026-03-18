@@ -216,7 +216,7 @@ export default function TermsOfService() {
                     </Card>
                 </div>
 
-                <AuthFooter openInNewTab={false} />
+                <AuthFooter variant="relative" openInNewTab={false} />
             </div>
         </div>
     );
