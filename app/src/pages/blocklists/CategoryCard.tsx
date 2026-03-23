@@ -1,5 +1,4 @@
 import React from "react";
-import type { LucideIcon } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -7,7 +6,6 @@ import { Switch } from "@/components/ui/switch";
 type CategoryState = "all" | "none" | "partial";
 
 interface CategoryCardProps {
-    icon: LucideIcon;
     label: string;
     description: string;
     totalLists: number;
@@ -28,7 +26,6 @@ function getCategoryState(enabledLists: number, totalRecommended: number): Categ
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = ({
-    icon: Icon,
     label,
     description,
     totalLists,

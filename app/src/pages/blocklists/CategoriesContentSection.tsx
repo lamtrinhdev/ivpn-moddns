@@ -348,7 +348,6 @@ function CategoriesGrid({
                 return (
                     <div key={cat.key} className="contents">
                         <CategoryCard
-                            icon={cat.icon}
                             label={cat.label}
                             description={cat.description}
                             totalLists={cat.items.length}

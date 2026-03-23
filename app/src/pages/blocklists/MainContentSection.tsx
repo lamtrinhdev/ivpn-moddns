@@ -285,7 +285,7 @@ export default function MainContentSection(): JSX.Element {
     };
 
     const tabTriggerClassName =
-        "relative rounded-none border-t border-l border-r border-b-2 bg-transparent flex-1 sm:flex-none px-3 sm:px-10 md:px-16 lg:px-20 py-2 sm:py-2.5 md:py-3 " +
+        "relative rounded-none border-t border-l border-r border-b-2 bg-transparent flex-1 sm:flex-none px-3 sm:px-10 md:px-16 lg:px-20 py-3 sm:py-2.5 md:py-3 " +
         "text-[var(--tailwind-colors-slate-300)] " +
         "border-transparent " +
         "data-[state=active]:!bg-transparent dark:data-[state=active]:!bg-transparent " +
@@ -324,11 +324,13 @@ export default function MainContentSection(): JSX.Element {
                         <section className="w-full">
                             <p className="text-[var(--tailwind-colors-slate-200)] text-base leading-6">
                                 Blocklists are collections of domains and IP addresses that help block trackers, ads, and malicious content. Enable general lists here and customise further with{" "}
-                                <button
-                                    type="button"
+                                <a
+                                    role="link"
+                                    tabIndex={0}
                                     className="underline cursor-pointer hover:text-[var(--tailwind-colors-slate-50)] transition-colors"
                                     onClick={() => setActiveTab("categories")}
-                                >Categories</button>.
+                                    onKeyDown={(e) => { if (e.key === "Enter") setActiveTab("categories"); }}
+                                >Categories</a>.
                             </p>
                         </section>
 
