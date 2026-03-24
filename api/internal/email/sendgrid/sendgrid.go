@@ -77,8 +77,8 @@ func (m *Mailer) SendEmailVerificationOTP(ctx context.Context, sendTo, otp strin
 func (m *Mailer) SendPasswordResetEmail(ctx context.Context, sendTo, passwordResetToken string) error {
 	resetLink := fmt.Sprintf("%s/reset-password/%s", m.serverName, passwordResetToken)
 	subject := "Reset your modDNS password"
-	plain := fmt.Sprintf("Reset your password by visiting: %s\n\nSent by modDNS", resetLink)
-	html := fmt.Sprintf("<p>Reset your password by visiting: <a href=\"%s\">%s</a></p><p>Sent by modDNS</p>", resetLink, resetLink)
+	plain := fmt.Sprintf("Hello,\n\nYou have requested a password reset for your modDNS account.\n\nFollow this link to reset your password: %s\n\nThe URL is live for 60 minutes after generation.\n\nIf you did not request the password reset, please ignore this message or contact support at moddns@ivpn.net.\n\nRegards,\nmodDNS team", resetLink)
+	html := fmt.Sprintf("<p>Hello,</p><p>You have requested a password reset for your modDNS account.</p><p>Follow this link to reset your password: <a href=\"%s\">%s</a></p><p>The URL is live for 60 minutes after generation.</p><p>If you did not request the password reset, please ignore this message or contact support at <a href=\"mailto:moddns@ivpn.net\">moddns@ivpn.net</a>.</p><p>Regards,<br>modDNS team</p>", resetLink, resetLink)
 	return m.sendBasic(ctx, sendTo, subject, plain, html)
 }
 
