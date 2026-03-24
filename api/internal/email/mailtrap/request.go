@@ -11,13 +11,12 @@ type To struct {
 
 // SendEmailRequest represents the payload necessary to send an email in Mailtrap service
 type SendEmailRequest struct {
-	From              From
-	To                []To              `json:"to"`
-	Subject           string            `json:"subject"`
-	Text              string            `json:"text"`
-	Category          string            `json:"category"`
-	TemplateUUID      string            `json:"template_uuid"`
-	TemplateVariables map[string]string `json:"template_variables"`
+	From     From
+	To       []To   `json:"to"`
+	Subject  string `json:"subject"`
+	Text     string `json:"text"`
+	Html     string `json:"html,omitempty"`
+	Category string `json:"category"`
 }
 
 // SendEmailResponse represents the response from the Mailtrap email service
