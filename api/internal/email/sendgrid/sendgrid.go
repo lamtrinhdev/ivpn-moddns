@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/ivpn/dns/api/internal/email/content"
 	"github.com/rs/zerolog/log"
 	"github.com/sendgrid/rest"
 	sg "github.com/sendgrid/sendgrid-go"
@@ -57,29 +58,20 @@ func New(serverName, apiKey string, opts ...Option) *Mailer {
 
 // SendWelcomeEmail sends welcome email with template dynamic data
 func (m *Mailer) SendWelcomeEmail(ctx context.Context, sendTo, _ string) error {
-	subject := "Welcome to modDNS"
-	verifyURL := fmt.Sprintf("%s/account-preferences", m.serverName)
-	homeURL := fmt.Sprintf("%s/home", m.serverName)
-	plain := fmt.Sprintf("Hello,\n\nWelcome to modDNS. Get started with using the service here: %s \n\nWarning: your email is not verified. Account recovery and critical service notification emails are disabled of unverified addresses. Follow this link to verify your email in modDNS settings: %s\n\nSent by modDNS", homeURL, verifyURL)
-	html := fmt.Sprintf("<p>Hello,</p><p>Welcome to modDNS. Get started with using the service here: <a href=\"%s\">%s</a></p><p><strong>Warning:</strong> your email is not verified. Account recovery and critical service notification emails are disabled for unverified addresses. Follow this link to verify your email in modDNS settings: <a href=\"%s\">%s</a></p><p>Sent by modDNS</p>", homeURL, homeURL, verifyURL, verifyURL)
-	return m.sendBasic(ctx, sendTo, subject, plain, html)
+	c := content.WelcomeContent(fmt.Sprintf("%s/home", m.serverName), fmt.Sprintf("%s/account-preferences", m.serverName))
+	return m.sendBasic(ctx, sendTo, c.Subject, c.Plain, c.Html)
 }
 
 // SendEmailVerificationOTP sends a 6-digit OTP code for email verification.
 func (m *Mailer) SendEmailVerificationOTP(ctx context.Context, sendTo, otp string) error {
-	subject := "modDNS Email address verification"
-	plain := fmt.Sprintf("Hello,\n\nHere is a one-time code to verify your modDNS registered email address: %s  \n\nIt expires in 15 minutes.\n\nNote: Unverified recipients will not receive account recovery emails.\n\nSent by modDNS", otp)
-	html := fmt.Sprintf("<p>Hello,</p><p>Here is a one-time code to verify your modDNS registered email address: <strong>%s</strong></p><p>It expires in 15 minutes.</p><p><em>Note: Unverified recipients will not receive account recovery emails.</em></p><p>Sent by modDNS</p>", otp)
-	return m.sendBasic(ctx, sendTo, subject, plain, html)
+	c := content.EmailVerificationOTPContent(otp)
+	return m.sendBasic(ctx, sendTo, c.Subject, c.Plain, c.Html)
 }
 
 // SendPasswordResetEmail sends password reset email with template dynamic data
 func (m *Mailer) SendPasswordResetEmail(ctx context.Context, sendTo, passwordResetToken string) error {
-	resetLink := fmt.Sprintf("%s/reset-password/%s", m.serverName, passwordResetToken)
-	subject := "Reset your modDNS password"
-	plain := fmt.Sprintf("Reset your password by visiting: %s\n\nSent by modDNS", resetLink)
-	html := fmt.Sprintf("<p>Reset your password by visiting: <a href=\"%s\">%s</a></p><p>Sent by modDNS</p>", resetLink, resetLink)
-	return m.sendBasic(ctx, sendTo, subject, plain, html)
+	c := content.PasswordResetContent(fmt.Sprintf("%s/reset-password/%s", m.serverName, passwordResetToken))
+	return m.sendBasic(ctx, sendTo, c.Subject, c.Plain, c.Html)
 }
 
 // Verify performs basic syntax validation. Extend with more advanced service if needed.

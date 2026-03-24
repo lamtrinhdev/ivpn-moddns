@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/ivpn/dns/api/internal/email/content"
 	"github.com/rs/zerolog/log"
 )
 
@@ -55,53 +56,36 @@ type mailpitSendRequest struct {
 
 // SendWelcomeEmail sends a welcome email to the user using Mailpit
 func (m *Mailpit) SendWelcomeEmail(ctx context.Context, sendTo, _ string) error {
-	subject := "Welcome to modDNS"
-	verifyURL := fmt.Sprintf("%s/account-preferences", m.serverName)
-	homeURL := fmt.Sprintf("%s/home", m.serverName)
-	body := fmt.Sprintf("Hello,\n\nWelcome to modDNS. Get started with using the service here: %s \n\nWarning: your email is not verified. Account recovery and critical service notification emails are disabled for unverified addresses. Follow this link to verify your email in modDNS settings: %s\n\nSent by modDNS", homeURL, verifyURL)
-
+	c := content.WelcomeContent(fmt.Sprintf("%s/home", m.serverName), fmt.Sprintf("%s/account-preferences", m.serverName))
 	reqBody := mailpitSendRequest{
 		From:    Email{Email: "info@moddns.net", Name: "modDNS"},
 		To:      []Email{{Email: sendTo, Name: "User"}},
-		Subject: subject,
-		Text:    body,
+		Subject: c.Subject,
+		Text:    c.Plain,
 	}
 	return m.sendEmail(ctx, sendTo, reqBody)
 }
 
 // SendPasswordResetEmail sends a password reset email to the user using Mailpit
 func (m *Mailpit) SendPasswordResetEmail(ctx context.Context, sendTo, passwordResetToken string) error {
-	passResetLink := fmt.Sprintf("%s/reset-password/%s", m.serverName, passwordResetToken)
-	subject := "modDNS Password Reset"
-	body := fmt.Sprintf("You requested a password reset.\n\nReset your password using the following link:\n%s", passResetLink)
-
+	c := content.PasswordResetContent(fmt.Sprintf("%s/reset-password/%s", m.serverName, passwordResetToken))
 	reqBody := mailpitSendRequest{
-		From: Email{
-			Email: "info@moddns.net",
-			Name:  "modDNS",
-		},
-		To: []Email{
-			{
-				Email: sendTo,
-				Name:  "User",
-			},
-		},
-		Subject: subject,
-		Text:    body,
+		From:    Email{Email: "info@moddns.net", Name: "modDNS"},
+		To:      []Email{{Email: sendTo, Name: "User"}},
+		Subject: c.Subject,
+		Text:    c.Plain,
 	}
-
 	return m.sendEmail(ctx, sendTo, reqBody)
 }
 
 // SendEmailVerificationOTP sends the OTP code to the user.
 func (m *Mailpit) SendEmailVerificationOTP(ctx context.Context, sendTo, otp string) error {
-	subject := "modDNS Email address verification"
-	body := fmt.Sprintf("Hello,\n\nHere is a one-time code to verify your modDNS registered email address: %s  \n\nIt expires in 15 minutes.\n\nNote: Unverified recipients will not receive account recovery emails.\n\nSent by modDNS", otp)
+	c := content.EmailVerificationOTPContent(otp)
 	reqBody := mailpitSendRequest{
 		From:    Email{Email: "info@moddns.net", Name: "modDNS"},
 		To:      []Email{{Email: sendTo, Name: "User"}},
-		Subject: subject,
-		Text:    body,
+		Subject: c.Subject,
+		Text:    c.Plain,
 	}
 	return m.sendEmail(ctx, sendTo, reqBody)
 }
