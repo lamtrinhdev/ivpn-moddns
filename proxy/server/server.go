@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -361,26 +362,33 @@ func (s *Server) RequestHandler() func(p *proxy.Proxy, dctx *proxy.DNSContext) (
 }
 
 func (s *Server) respond(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) {
-	var emptyResourceRecord string
-	switch dctx.Req.Question[0].Qtype {
-	case dns.TypeA:
-		emptyResourceRecord = "%s	30	IN	A	0.0.0.0"
-	case dns.TypeAAAA:
-		emptyResourceRecord = "%s	30	IN	AAAA	::"
-	default:
-		emptyResourceRecord = "%s	30	IN	A	0.0.0.0"
+	if reqCtx.FilterResult.Status != model.StatusBlocked {
+		return
 	}
 
-	if reqCtx.FilterResult.Status == model.StatusBlocked {
-		dctx.Res = dctx.Req
-		dctx.Res.Response = true // Set QR flag to indicate this is a response
+	resp := new(dns.Msg)
+	resp.SetReply(dctx.Req)
+
+	switch dctx.Req.Question[0].Qtype {
+	case dns.TypeA:
 		q := dctx.Req.Question[0].Name
-		fakeRR, err := dns.NewRR(fmt.Sprintf(emptyResourceRecord, q))
-		if err != nil {
-			reqCtx.Logger.Err(err).Msg("Error creating fake RR")
-		}
-		dctx.Res.Answer = []dns.RR{fakeRR}
+		resp.Answer = []dns.RR{&dns.A{
+			Hdr: dns.RR_Header{Name: q, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 30},
+			A:   net.IPv4zero,
+		}}
+	case dns.TypeAAAA:
+		q := dctx.Req.Question[0].Name
+		resp.Answer = []dns.RR{&dns.AAAA{
+			Hdr: dns.RR_Header{Name: q, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 30},
+			AAAA: net.IPv6zero,
+		}}
+	default:
+		// For HTTPS, SVCB, and other record types: return empty answer (NODATA).
+		// An empty answer with NOERROR signals the domain exists but has no records
+		// of the requested type, which correctly blocks without type mismatch.
 	}
+
+	dctx.Res = resp
 }
 
 func (s *Server) ResponseHandler() func(dctx *proxy.DNSContext, err error) {
