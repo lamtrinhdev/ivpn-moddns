@@ -40,7 +40,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                                     src={logoSrc}
                                     alt={logoAlt ?? `${name} logo`}
                                     loading="lazy"
-                                    className="h-5 w-5 mt-0.5 shrink-0"
+                                    className="h-5 w-5 mt-0.5 shrink-0 object-contain"
                                 />
                             ) : null}
                             <div className="text-tailwind-colors-slate-50 font-semibold text-base leading-tight truncate break-words">
@@ -60,7 +60,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                             data-[state=checked]:[&>[data-slot=switch-thumb]]:translate-x-4"
                         />
                     </div>
-                    <div className="pt-2 font-text-xs-leading-5-normal text-[var(--tailwind-colors-slate-100)] text-xs h-[72px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] break-words hyphens-auto">
+                    <div className="pt-2 font-text-xs-leading-5-normal text-[var(--tailwind-colors-slate-100)] text-xs h-[72px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] break-words hyphens-none">
                         {description}
                     </div>
                 </div>

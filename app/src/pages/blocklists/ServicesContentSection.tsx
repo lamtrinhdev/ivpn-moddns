@@ -14,15 +14,15 @@ import type {
 } from "@/api/client/api";
 
 function formatASNs(asns?: Array<number>): string {
-    if (!asns || asns.length === 0) return "No ASNs";
+    if (!asns || asns.length === 0) return "No ASN";
     const shown = asns.slice(0, 5).join(", ");
-    if (asns.length <= 5) return `ASNs: ${shown}`;
-    return `ASNs: ${shown} +${asns.length - 5}`;
+    if (asns.length <= 5) return `ASN: ${shown}`;
+    return `ASN: ${shown} +${asns.length - 5}`;
 }
 
 function formatASNsTitle(asns?: Array<number>): string {
-    if (!asns || asns.length === 0) return "No ASNs";
-    return `ASNs: ${asns.join(", ")}`;
+    if (!asns || asns.length === 0) return "No ASN";
+    return `ASN: ${asns.join(", ")}`;
 }
 
 type StatusFilter = "all" | "blocked" | "unblocked";
@@ -208,7 +208,7 @@ export default function ServicesContentSection(): JSX.Element {
                                     <ServiceCard
                                         key={id || `${name}-${idx}`}
                                         name={name}
-                                        description={`Block ${name} service and all its domains.`}
+                                        description={`Block known ${name} websites, apps, and related services.`}
                                         asnsLabel={asnsLabel}
                                         asnsTitle={asnsTitle}
                                         logoSrc={logoSrc}
