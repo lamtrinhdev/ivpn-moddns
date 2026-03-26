@@ -8,6 +8,7 @@ import { useAppStore } from "@/store/general";
 import { toast } from "sonner";
 import ServiceCard from "@/pages/blocklists/ServiceCard";
 import { getServiceLogoSrc } from "@/assets/services";
+import { useTheme } from "@/components/theme-provider";
 import type {
     ApiServicesUpdates,
     ServicescatalogService,
@@ -30,6 +31,7 @@ type StatusFilter = "all" | "blocked" | "unblocked";
 export default function ServicesContentSection(): JSX.Element {
     const activeProfile = useAppStore((state) => state.activeProfile);
     const setActiveProfile = useAppStore((state) => state.setActiveProfile);
+    const { theme } = useTheme();
 
     const [services, setServices] = useState<ServicescatalogService[]>([]);
     const [loading, setLoading] = useState(true);
@@ -202,7 +204,7 @@ export default function ServicesContentSection(): JSX.Element {
                                 const isBlocked = id ? blockedServices.includes(id) : false;
                                 const asnsLabel = formatASNs(svc.asns);
                                 const asnsTitle = formatASNsTitle(svc.asns);
-                                const logoSrc = getServiceLogoSrc({ serviceId: id, serviceName: name });
+                                const logoSrc = getServiceLogoSrc({ serviceId: id, serviceName: name, isDark: theme === "dark" });
 
                                 return (
                                     <ServiceCard
