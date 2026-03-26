@@ -559,8 +559,9 @@ export default function FAQ(): JSX.Element {
                     {hasHistory && (
                         <div className="mb-6">
                             <Button
+                                variant="ghost"
                                 onClick={() => navigate(-1)}
-                                className="flex items-center gap-2 text-[var(--tailwind-colors-rdns-600)] hover:text-[var(--tailwind-colors-rdns-700)] bg-transparent hover:bg-transparent border-none p-0 font-inherit cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-1.5 h-auto min-h-0 text-[var(--tailwind-colors-rdns-600)] hover:text-[var(--tailwind-colors-rdns-700)] hover:bg-black/5 dark:hover:bg-white/10 rounded-md"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 Back
