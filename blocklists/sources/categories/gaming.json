@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "gaming",
-    "tags": ["category", "gaming", "ut1", "recommended"],
+    "tags": ["category", "gaming", "ut1"],
     "schedule": "@hourly"
   }
 ]

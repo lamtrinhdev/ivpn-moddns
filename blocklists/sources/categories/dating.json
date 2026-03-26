@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "dating",
-    "tags": ["category", "dating", "ut1", "recommended"],
+    "tags": ["category", "dating", "ut1"],
     "schedule": "@hourly"
   },
   {
@@ -20,7 +20,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "dating",
-    "tags": ["category", "dating", "shadowwhisperer", "recommended"],
+    "tags": ["category", "dating", "shadowwhisperer"],
     "schedule": "@hourly"
   }
 ]

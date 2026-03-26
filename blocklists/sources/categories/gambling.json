@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "gambling",
-    "tags": ["category", "gambling", "hagezi", "recommended"],
+    "tags": ["category", "gambling", "hagezi"],
     "schedule": "@hourly"
   },
   {

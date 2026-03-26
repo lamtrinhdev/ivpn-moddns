@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "social_media",
-    "tags": ["category", "social_media", "hagezi", "recommended"],
+    "tags": ["category", "social_media", "hagezi"],
     "schedule": "@hourly"
   }
 ]

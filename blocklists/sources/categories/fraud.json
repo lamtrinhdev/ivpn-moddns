@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "fraud",
-    "tags": ["category", "fraud", "blp", "recommended"],
+    "tags": ["category", "fraud", "blp"],
     "schedule": "@hourly"
   },
   {
@@ -20,7 +20,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "fraud",
-    "tags": ["category", "fraud", "blp", "recommended"],
+    "tags": ["category", "fraud", "blp"],
     "schedule": "@hourly"
   }
 ]

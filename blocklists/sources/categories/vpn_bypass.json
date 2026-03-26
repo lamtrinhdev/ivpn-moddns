@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "vpn_bypass",
-    "tags": ["category", "vpn_bypass", "hagezi", "recommended"],
+    "tags": ["category", "vpn_bypass", "hagezi"],
     "schedule": "@hourly"
   },
   {

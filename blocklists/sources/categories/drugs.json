@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "drugs",
-    "tags": ["category", "drugs", "ut1", "recommended"],
+    "tags": ["category", "drugs", "ut1"],
     "schedule": "@hourly"
   },
   {
@@ -20,7 +20,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "drugs",
-    "tags": ["category", "drugs", "blp", "recommended"],
+    "tags": ["category", "drugs", "blp"],
     "schedule": "@hourly"
   }
 ]

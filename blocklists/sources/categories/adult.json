@@ -9,7 +9,7 @@
     "kind": "category",
     "category": "adult",
     "intensity": ["comprehensive"],
-    "tags": ["category", "adult", "hagezi", "recommended"],
+    "tags": ["category", "adult", "hagezi"],
     "schedule": "@hourly"
   },
   {

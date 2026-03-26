@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "crypto",
-    "tags": ["category", "crypto", "blp", "recommended"],
+    "tags": ["category", "crypto", "blp"],
     "schedule": "@hourly"
   },
   {
@@ -32,7 +32,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "crypto",
-    "tags": ["category", "crypto", "ut1", "recommended"],
+    "tags": ["category", "crypto", "ut1"],
     "schedule": "@hourly"
   }
 ]

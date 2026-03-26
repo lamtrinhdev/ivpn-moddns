@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "piracy",
-    "tags": ["category", "piracy", "hagezi", "recommended"],
+    "tags": ["category", "piracy", "hagezi"],
     "schedule": "@hourly"
   },
   {
@@ -20,7 +20,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "piracy",
-    "tags": ["category", "piracy", "blp", "recommended"],
+    "tags": ["category", "piracy", "blp"],
     "schedule": "@hourly"
   },
   {

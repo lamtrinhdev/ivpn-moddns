@@ -8,7 +8,7 @@
     "syntax": "domains",
     "kind": "category",
     "category": "clickbait",
-    "tags": ["category", "clickbait", "blp", "recommended"],
+    "tags": ["category", "clickbait", "blp"],
     "schedule": "@hourly"
   }
 ]
