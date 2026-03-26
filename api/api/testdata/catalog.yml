@@ -1,4 +1,0 @@
-services:
-  - id: test-service
-    name: Test Service
-    asns: [12345]

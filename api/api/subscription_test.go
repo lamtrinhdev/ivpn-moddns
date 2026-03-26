@@ -43,7 +43,7 @@ func (suite *SubscriptionAPITestSuite) SetupSuite() {
 			PSK:            "test-psk-token",
 		},
 		Server:  &config.ServerConfig{Name: "modDNS Test", FQDN: "test.local"},
-		Service: &config.ServiceConfig{SubscriptionCacheExpiration: 15 * time.Minute, ServicesCatalogPath: "testdata/catalog.yml"},
+		Service: &config.ServiceConfig{SubscriptionCacheExpiration: 15 * time.Minute},
 	}
 }
 
@@ -73,6 +73,7 @@ func (suite *SubscriptionAPITestSuite) createTestServer() *APIServer {
 		suite.validator,
 		mockMailer,
 		mockShortener,
+		nil,
 	)
 	suite.Require().NoError(err, "Failed to create test server")
 	server.RegisterRoutes()
