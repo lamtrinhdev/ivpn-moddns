@@ -52,6 +52,7 @@ func (suite *WebAuthnAPITestSuite) SetupSuite() {
 		Service: &config.ServiceConfig{
 			IdLimiterMax:        5,
 			IdLimiterExpiration: time.Minute,
+			ServicesCatalogPath: "testdata/catalog.yml",
 		},
 		Server: &config.ServerConfig{
 			Name: "modDNS Test",

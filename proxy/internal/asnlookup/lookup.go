@@ -1,6 +1,7 @@
 package asnlookup
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -13,7 +14,7 @@ type Lookup struct {
 
 func New(mmdbPath string) (*Lookup, error) {
 	if mmdbPath == "" {
-		return nil, nil
+		return nil, errors.New("ASN MMDB path is required")
 	}
 	db, err := geoip2.Open(mmdbPath)
 	if err != nil {

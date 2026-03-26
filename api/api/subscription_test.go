@@ -43,7 +43,7 @@ func (suite *SubscriptionAPITestSuite) SetupSuite() {
 			PSK:            "test-psk-token",
 		},
 		Server:  &config.ServerConfig{Name: "modDNS Test", FQDN: "test.local"},
-		Service: &config.ServiceConfig{SubscriptionCacheExpiration: 15 * time.Minute},
+		Service: &config.ServiceConfig{SubscriptionCacheExpiration: 15 * time.Minute, ServicesCatalogPath: "testdata/catalog.yml"},
 	}
 }
 

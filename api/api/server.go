@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -48,7 +49,11 @@ func NewServer(config *config.Config, service service.Service, db db.Db, cache c
 
 	var servicesCatalog *servicescatalogcache.Loader
 	if config != nil && config.Service != nil {
-		servicesCatalog = servicescatalogcache.New(config.Service.ServicesCatalogPath, config.Service.ServicesCatalogReloadEvery)
+		var err error
+		servicesCatalog, err = servicescatalogcache.New(config.Service.ServicesCatalogPath, config.Service.ServicesCatalogReloadEvery)
+		if err != nil {
+			return nil, fmt.Errorf("services catalog: %w", err)
+		}
 	}
 
 	server := &APIServer{
