@@ -10,7 +10,6 @@ interface CategoryCardProps {
     description: string;
     totalLists: number;
     enabledLists: number;
-    totalRecommended: number;
     totalEntries: string;
     lastUpdated: string;
     onToggle: () => void;
@@ -19,9 +18,9 @@ interface CategoryCardProps {
     onExpandToggle: () => void;
 }
 
-function getCategoryState(enabledLists: number, totalRecommended: number): CategoryState {
+function getCategoryState(enabledLists: number, totalLists: number): CategoryState {
     if (enabledLists === 0) return "none";
-    if (enabledLists >= totalRecommended) return "all";
+    if (enabledLists >= totalLists) return "all";
     return "partial";
 }
 
@@ -30,7 +29,6 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
     description,
     totalLists,
     enabledLists,
-    totalRecommended,
     totalEntries,
     lastUpdated,
     onToggle,
@@ -38,19 +36,16 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
     expanded,
     onExpandToggle,
 }) => {
-    const state = getCategoryState(enabledLists, totalRecommended);
+    const state = getCategoryState(enabledLists, totalLists);
 
-    const switchBgClass =
-        state === "partial"
-            ? "data-[state=checked]:bg-amber-500"
-            : "data-[state=checked]:bg-[var(--tailwind-colors-rdns-600)]";
+    const switchBgClass = "data-[state=checked]:bg-[var(--tailwind-colors-rdns-600)]";
 
     return (
         <Card
             data-testid="category-card"
-            className={`bg-transparent dark:bg-[var(--variable-collection-surface)] p-3 border shadow-sm flex flex-col justify-between h-[196px] lg:h-[180px] w-full overflow-hidden transition-colors duration-200 ${
+            className={`bg-transparent dark:bg-[var(--variable-collection-surface)] p-3 border shadow-sm flex flex-col justify-between h-[196px] lg:h-[180px] w-full overflow-hidden transition-all duration-200 ${
                 expanded
-                    ? "border-[var(--tailwind-colors-rdns-600)]/40 dark:border-[var(--tailwind-colors-rdns-600)]/40"
+                    ? "border-[var(--tailwind-colors-rdns-600)]/80 shadow-[0_0_12px_rgba(18,164,149,0.2)]"
                     : "border-[var(--tailwind-colors-slate-light-300)] dark:border-transparent"
             } rounded-[var(--tailwind-primitives-border-radius-rounded)]`}
         >
@@ -63,9 +58,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
                                 <span className="text-tailwind-colors-slate-50 font-semibold text-base leading-tight truncate" title={label}>
                                     {label}
                                 </span>
-                                {state === "partial" && (
-                                    <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                                        {enabledLists}/{totalRecommended}
+                                {state !== "none" && (
+                                    <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none bg-[var(--tailwind-colors-rdns-600)]/15 text-[var(--tailwind-colors-rdns-600)] border border-[var(--tailwind-colors-rdns-600)]/25">
+                                        {enabledLists}/{totalLists}
                                     </span>
                                 )}
                             </div>

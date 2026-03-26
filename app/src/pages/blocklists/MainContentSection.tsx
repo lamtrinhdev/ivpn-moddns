@@ -327,7 +327,7 @@ export default function MainContentSection(): JSX.Element {
                                 <a
                                     role="link"
                                     tabIndex={0}
-                                    className="underline cursor-pointer hover:text-[var(--tailwind-colors-slate-50)] transition-colors"
+                                    className="!text-[var(--tailwind-colors-rdns-600)] underline cursor-pointer hover:!text-[var(--tailwind-colors-slate-50)] transition-colors"
                                     onClick={() => setActiveTab("categories")}
                                     onKeyDown={(e) => { if (e.key === "Enter") setActiveTab("categories"); }}
                                 >Categories</a>.

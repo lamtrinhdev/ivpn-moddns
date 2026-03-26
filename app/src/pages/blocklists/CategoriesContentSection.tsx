@@ -147,8 +147,7 @@ interface PreparedCategory {
     icon: LucideIcon;
     description: string;
     items: ModelBlocklist[];
-    recommended: ModelBlocklist[];
-    enabledRecommended: number;
+    enabledTotal: number;
     totalEntries: string;
     mostRecent: string;
 }
@@ -174,19 +173,13 @@ export default function CategoriesContentSection({
         return map;
     }, [blocklists]);
 
-    const getRecommended = (items: ModelBlocklist[]): ModelBlocklist[] => {
-        const tagged = items.filter((bl) => bl.tags?.includes("recommended"));
-        return tagged.length > 0 ? tagged : items;
-    };
-
     // Derive categories from data — no hardcoded list needed
     const preparedCategories: PreparedCategory[] = useMemo(() => {
         return Array.from(grouped.entries())
             .filter(([key]) => key !== "other")
             .map(([key, items]) => {
                 const meta = getCategoryMeta(key);
-                const recommended = getRecommended(items);
-                const enabledRecommended = recommended.filter((bl) =>
+                const enabledTotal = items.filter((bl) =>
                     enabledBlocklists.includes(bl.blocklist_id)
                 ).length;
                 const totalEntries = formatEntries(
@@ -198,22 +191,21 @@ export default function CategoriesContentSection({
                     return new Date(bl.last_modified) > new Date(latest) ? bl.last_modified : latest;
                 }, "" as string);
 
-                return { key, ...meta, items, recommended, enabledRecommended, totalEntries, mostRecent };
+                return { key, ...meta, items, enabledTotal, totalEntries, mostRecent };
             });
     }, [grouped, enabledBlocklists]);
 
     const handleCategoryToggle = (categoryKey: string) => {
         const items = grouped.get(categoryKey) ?? [];
-        const recommended = getRecommended(items);
-        const recommendedIds = recommended.map((bl) => bl.blocklist_id);
-        const enabledCount = recommended.filter((bl) =>
+        const allIds = items.map((bl) => bl.blocklist_id);
+        const enabledCount = items.filter((bl) =>
             enabledBlocklists.includes(bl.blocklist_id)
         ).length;
 
-        if (enabledCount >= recommended.length) {
-            onCategoryToggle(recommendedIds, false);
+        if (enabledCount > 0) {
+            onCategoryToggle(allIds, false);
         } else {
-            onCategoryToggle(recommendedIds, true);
+            onCategoryToggle(allIds, true);
         }
     };
 
@@ -351,8 +343,7 @@ function CategoriesGrid({
                             label={cat.label}
                             description={cat.description}
                             totalLists={cat.items.length}
-                            enabledLists={cat.enabledRecommended}
-                            totalRecommended={cat.recommended.length}
+                            enabledLists={cat.enabledTotal}
                             totalEntries={cat.totalEntries}
                             lastUpdated={formatUpdatedRelative(cat.mostRecent)}
                             onToggle={() => onCategoryToggle(cat.key)}
