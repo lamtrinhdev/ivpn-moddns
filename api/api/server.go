@@ -39,17 +39,12 @@ type APIServer struct {
 }
 
 // NewServer inititiates database connection and sets up API endpoints
-func NewServer(config *config.Config, service service.Service, db db.Db, cache cache.Cache, idGen idgen.Generator, apiValidator *validator.APIValidator, email email.Mailer, shortener *urlshort.URLShortener) (*APIServer, error) {
+func NewServer(config *config.Config, service service.Service, db db.Db, cache cache.Cache, idGen idgen.Generator, apiValidator *validator.APIValidator, email email.Mailer, shortener *urlshort.URLShortener, servicesCatalog *servicescatalogcache.Loader) (*APIServer, error) {
 	app := fiber.New(fiber.Config{
 		ServerHeader: "modDNS API",
 		AppName:      "modDNS API",
 		BodyLimit:    1024 * 1024, // 1 MB
 	})
-
-	var servicesCatalog *servicescatalogcache.Loader
-	if config != nil && config.Service != nil {
-		servicesCatalog = servicescatalogcache.New(config.Service.ServicesCatalogPath, config.Service.ServicesCatalogReloadEvery)
-	}
 
 	server := &APIServer{
 		App:             app,
@@ -66,11 +61,6 @@ func NewServer(config *config.Config, service service.Service, db db.Db, cache c
 
 	middleware.InitLimitConfig(config.API)
 	server.setupMiddlewares()
-
-	// Start catalog reload loop.
-	if server.ServicesCatalog != nil {
-		go server.ServicesCatalog.Start(context.Background())
-	}
 
 	return server, nil
 }

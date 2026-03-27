@@ -31,7 +31,7 @@ const BlocklistCard: React.FC<BlocklistCardProps> = ({
             <CardContent className="p-0 flex flex-col justify-between h-full">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-start justify-between gap-2">
-                        <div className="text-tailwind-colors-slate-50 font-semibold text-base leading-tight max-w-[70%] md:max-w-[75%] lg:max-w-[80%] truncate break-words">
+                        <div className="text-tailwind-colors-slate-50 font-semibold text-base leading-tight max-w-[70%] md:max-w-[75%] lg:max-w-[80%] truncate break-words" title={title}>
                             {title}
                         </div>
                         <Switch
@@ -47,7 +47,7 @@ const BlocklistCard: React.FC<BlocklistCardProps> = ({
                             data-[state=checked]:[&>[data-slot=switch-thumb]]:translate-x-4"
                         />
                     </div>
-                    <div className="pt-2 font-text-xs-leading-5-normal text-[var(--tailwind-colors-slate-100)] text-xs h-[72px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] break-words hyphens-auto">
+                    <div className="pt-2 font-text-xs-leading-5-normal text-[var(--tailwind-colors-slate-100)] text-xs h-[72px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] break-words hyphens-none">
                         {description}
                     </div>
                 </div>

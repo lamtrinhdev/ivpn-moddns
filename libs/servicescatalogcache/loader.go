@@ -2,6 +2,8 @@ package servicescatalogcache
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -19,22 +21,24 @@ type Loader struct {
 	lastLoad time.Time
 }
 
-func New(path string, reloadEvery time.Duration) *Loader {
+func New(path string, reloadEvery time.Duration) (*Loader, error) {
 	if path == "" {
-		return nil
+		return nil, errors.New("services catalog path is required")
 	}
 	if reloadEvery <= 0 {
 		reloadEvery = 5 * time.Minute
 	}
-	return &Loader{path: path, reloadEvery: reloadEvery}
+	l := &Loader{path: path, reloadEvery: reloadEvery}
+	if err := l.Reload(); err != nil {
+		return nil, fmt.Errorf("initial catalog load: %w", err)
+	}
+	return l, nil
 }
 
 func (l *Loader) Start(ctx context.Context) {
 	if l == nil {
 		return
 	}
-	// Initial load.
-	_ = l.Reload()
 
 	ticker := time.NewTicker(l.reloadEvery)
 	defer ticker.Stop()

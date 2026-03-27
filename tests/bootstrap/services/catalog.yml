@@ -12,7 +12,7 @@ services:
   - id: amazon
     name: Amazon
     logo_key: amazon
-    asns: [16509, 14618]
+    asns: [16509, 14618, 16625]
   - id: meta
     name: Meta (Facebook)
     logo_key: meta
@@ -20,8 +20,8 @@ services:
   - id: apple
     name: Apple
     logo_key: apple
-    asns: [714]
+    asns: [714, 6185]
   - id: microsoft
     name: Microsoft
     logo_key: microsoft
-    asns: [8075]
+    asns: [8068, 8069, 8070, 8071, 8072, 8073, 8074, 8075]

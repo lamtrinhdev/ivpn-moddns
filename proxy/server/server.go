@@ -106,16 +106,20 @@ func NewServer(serverConfig *config.Config, collectorChannels map[string]channel
 		return nil, err
 	}
 
-	// Optional services ASN blocking dependencies.
-	servicesCatalog := servicescatalogcache.New(serverConfig.Services.CatalogPath, serverConfig.Services.CatalogReloadEvery)
-	if servicesCatalog != nil {
-		go servicesCatalog.Start(context.Background())
+	// Services ASN blocking dependencies — both catalog and GeoDB are required.
+	servicesCatalog, err := servicescatalogcache.New(serverConfig.Services.CatalogPath, serverConfig.Services.CatalogReloadEvery)
+	if err != nil {
+		log.Error().Err(err).Str("path", serverConfig.Services.CatalogPath).Msg("Failed to initialize services catalog")
+		return nil, fmt.Errorf("services catalog: %w", err)
 	}
+	go servicesCatalog.Start(context.Background())
+
 	lookup, err := asnlookup.New(serverConfig.Services.GeoIPASNDBPath)
 	if err != nil {
-		log.Error().Err(err).Str("path", serverConfig.Services.GeoIPASNDBPath).Msg("Failed to open ASN MMDB; services ASN blocking disabled")
-		lookup = nil
+		log.Error().Err(err).Str("path", serverConfig.Services.GeoIPASNDBPath).Msg("Failed to open ASN MMDB")
+		return nil, fmt.Errorf("ASN lookup: %w", err)
 	}
+	log.Info().Str("catalog", serverConfig.Services.CatalogPath).Str("geodb", serverConfig.Services.GeoIPASNDBPath).Msg("Services blocking enabled")
 
 	server.DomainFilter = filter.NewDomainFilter(dnsProxy, cache)
 	server.IPFilter = filter.NewIPFilter(dnsProxy, cache, servicesCatalog, lookup)
