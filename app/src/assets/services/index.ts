@@ -1,7 +1,7 @@
 type LogoVariants = {
     base?: string;
-    white?: string;
-    dark?: string;
+    dark_mode?: string;
+    light_mode?: string;
 };
 
 // TODO: Consider lazy-loading service logos when code splitting is complete
@@ -27,12 +27,12 @@ function buildServiceLogoMap(): Record<string, LogoVariants> {
         let variant: keyof LogoVariants = "base";
         let servicePart = baseName;
 
-        if (baseName.endsWith("_white")) {
-            variant = "white";
-            servicePart = baseName.slice(0, -"_white".length);
-        } else if (baseName.endsWith("_dark")) {
-            variant = "dark";
-            servicePart = baseName.slice(0, -"_dark".length);
+        if (baseName.endsWith("_dark_mode")) {
+            variant = "dark_mode";
+            servicePart = baseName.slice(0, -"_dark_mode".length);
+        } else if (baseName.endsWith("_light_mode")) {
+            variant = "light_mode";
+            servicePart = baseName.slice(0, -"_light_mode".length);
         }
 
         const key = normalizeServiceKey(servicePart);
@@ -54,6 +54,7 @@ function normalizeServiceKey(value: string): string {
 export function getServiceLogoSrc(params: {
     serviceId?: string | null;
     serviceName?: string | null;
+    isDark?: boolean;
 }): string | undefined {
     const raw = params.serviceId || params.serviceName;
     if (!raw) return undefined;
@@ -62,11 +63,6 @@ export function getServiceLogoSrc(params: {
     const variants = SERVICE_LOGOS[key];
     if (!variants) return undefined;
 
-    const isDarkModeEnabled =
-        typeof document !== "undefined" &&
-        document.documentElement.classList.contains("dark");
-
-    // Dark mode: prefer white logo; Light mode: prefer dark logo.
-    if (isDarkModeEnabled) return variants.white ?? variants.base ?? variants.dark;
-    return variants.dark ?? variants.base ?? variants.white;
+    if (params.isDark) return variants.dark_mode ?? variants.base ?? variants.light_mode;
+    return variants.light_mode ?? variants.base ?? variants.dark_mode;
 }
