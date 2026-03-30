@@ -20,7 +20,7 @@ const (
 func NewFilter(proxy *proxy.Proxy, cache cache.Cache, filterType string) (Filter, error) {
 	switch filterType { // nolint
 	case FilterTypeDomain:
-		return NewDomainFilter(proxy, cache), nil
+		return NewDomainFilter(proxy, cache, nil), nil
 	case FilterTypeIP:
 		return NewIPFilter(proxy, cache, nil, nil), nil
 	}

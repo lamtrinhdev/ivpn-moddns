@@ -3,6 +3,7 @@ package servicescatalog
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -16,11 +17,13 @@ import (
 //     name: Google
 //     logo_key: google
 //     asns: [15169]
+//     domains: [google.com, youtube.com]
 type Service struct {
-	ID      string `json:"id" yaml:"id"`
-	Name    string `json:"name" yaml:"name"`
-	LogoKey string `json:"logo_key,omitempty" yaml:"logo_key"`
-	ASNs    []uint `json:"asns" yaml:"asns"`
+	ID      string   `json:"id" yaml:"id"`
+	Name    string   `json:"name" yaml:"name"`
+	LogoKey string   `json:"logo_key,omitempty" yaml:"logo_key"`
+	ASNs    []uint   `json:"asns" yaml:"asns"`
+	Domains []string `json:"domains,omitempty" yaml:"domains"`
 }
 
 type Catalog struct {
@@ -47,6 +50,7 @@ func Validate(cat *Catalog) error {
 		return fmt.Errorf("catalog is nil")
 	}
 	seen := make(map[string]struct{}, len(cat.Services))
+	seenDomains := make(map[string]string) // domain -> service ID
 	for i, svc := range cat.Services {
 		if svc.ID == "" {
 			return fmt.Errorf("services[%d].id is required", i)
@@ -58,6 +62,19 @@ func Validate(cat *Catalog) error {
 			return fmt.Errorf("duplicate service id: %q", svc.ID)
 		}
 		seen[svc.ID] = struct{}{}
+		for _, d := range svc.Domains {
+			dl := strings.ToLower(d)
+			if dl != d {
+				return fmt.Errorf("services[%d] (%s): domain %q must be lowercase", i, svc.ID, d)
+			}
+			if strings.HasSuffix(d, ".") {
+				return fmt.Errorf("services[%d] (%s): domain %q must not have trailing dot", i, svc.ID, d)
+			}
+			if other, ok := seenDomains[dl]; ok {
+				return fmt.Errorf("services[%d] (%s): domain %q already used by service %q", i, svc.ID, d, other)
+			}
+			seenDomains[dl] = svc.ID
+		}
 	}
 	return nil
 }
@@ -72,6 +89,26 @@ func (c *Catalog) FindByID(id string) (Service, bool) {
 		}
 	}
 	return Service{}, false
+}
+
+// DomainMapForServiceIDs returns a map of domain -> service ID for the given
+// service IDs. Domains are lowercased. This map is used for domain-phase
+// service blocking to catch CDN-served traffic that ASN blocking misses.
+func (c *Catalog) DomainMapForServiceIDs(ids []string) map[string]string {
+	out := make(map[string]string)
+	if c == nil {
+		return out
+	}
+	for _, id := range ids {
+		svc, ok := c.FindByID(id)
+		if !ok {
+			continue
+		}
+		for _, d := range svc.Domains {
+			out[strings.ToLower(d)] = svc.ID
+		}
+	}
+	return out
 }
 
 // ASNsForServiceIDs returns the union of ASNs for the given service IDs.
