@@ -101,7 +101,7 @@ func BenchmarkDomainMatching(b *testing.B) {
 
 	mockCache := new(mocks.Cache)
 	proxy := &proxy.Proxy{}
-	fm := NewDomainFilter(proxy, mockCache)
+	fm := NewDomainFilter(proxy, mockCache, nil)
 
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {

@@ -121,7 +121,7 @@ func NewServer(serverConfig *config.Config, collectorChannels map[string]channel
 	}
 	log.Info().Str("catalog", serverConfig.Services.CatalogPath).Str("geodb", serverConfig.Services.GeoIPASNDBPath).Msg("Services blocking enabled")
 
-	server.DomainFilter = filter.NewDomainFilter(dnsProxy, cache)
+	server.DomainFilter = filter.NewDomainFilter(dnsProxy, cache, servicesCatalog)
 	server.IPFilter = filter.NewIPFilter(dnsProxy, cache, servicesCatalog, lookup)
 	server.Proxy = dnsProxy
 
@@ -383,7 +383,7 @@ func (s *Server) respond(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSC
 	case dns.TypeAAAA:
 		q := dctx.Req.Question[0].Name
 		resp.Answer = []dns.RR{&dns.AAAA{
-			Hdr: dns.RR_Header{Name: q, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 30},
+			Hdr:  dns.RR_Header{Name: q, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 30},
 			AAAA: net.IPv6zero,
 		}}
 	default:

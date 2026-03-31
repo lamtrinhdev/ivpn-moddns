@@ -24,6 +24,10 @@ from libs.profile_helpers import (
     SVC_GOOGLE_DOMAIN,
     SVC_GOOGLE_IP,
     SVC_GOOGLE_ID,
+    SVC_APPLE_DOMAIN,
+    SVC_APPLE_ID,
+    SVC_MICROSOFT_DOMAIN,
+    SVC_MICROSOFT_ID,
     REAL_GOOGLE_DOMAIN,
     REAL_HTTPS_HINTS_DOMAIN,
     TEST_DOMAIN,
@@ -120,6 +124,92 @@ class TestServicesBlocking(ProfileHelpers):
             assert ip_str != "0.0.0.0", (
                 f"After unblocking {SVC_GOOGLE_ID}, {SVC_GOOGLE_DOMAIN} should "
                 f"resolve normally; got {ip_str}"
+            )
+
+
+# ===================================================================
+# Apple services blocking (real domain, AS714/AS6185)
+# ===================================================================
+class TestAppleServicesBlocking(ProfileHelpers):
+    """Verify ASN-based blocking for Apple services using real DNS.
+
+    Uses apple.com (a real domain) which resolves to IPs in AS714.
+    Marked xfail(strict=False) because it depends on live external DNS.
+    """
+
+    def setup_class(self):
+        self.config = get_settings()
+        self.api_config = api_config.Configuration(host=self.config.DNS_API_ADDR)
+        self.dns_lib = DNSLib(self.config.DOH_ENDPOINT)
+
+    @pytest.mark.asyncio
+    @pytest.mark.xfail(
+        reason="Depends on apple.com resolving to Apple ASN (external DNS)",
+        strict=False,
+    )
+    async def test_apple_services_block_by_asn(self, create_account_and_login):
+        """Blocking the 'apple' service should cause apple.com
+        (AS714/AS6185) to return 0.0.0.0."""
+        account, cookie = create_account_and_login
+        with client.ApiClient(self.api_config) as api_client:
+            p = api.ProfileApi(api_client)
+            p.api_client.default_headers["Cookie"] = cookie
+
+            if not await services_available(self.dns_lib, p, cookie):
+                pytest.skip("Services/ASN blocking not available (GeoIP DB missing?)")
+
+            profile_id = self._create_profile(p, "svc_block_apple")
+            self._block_service(p, profile_id, [SVC_APPLE_ID])
+
+            resp = await self.dns_lib.send_doh_request(profile_id, SVC_APPLE_DOMAIN, A)
+            ip_str = extract_ip(resp)
+            assert ip_str == "0.0.0.0", (
+                f"Services block for {SVC_APPLE_ID} did not block "
+                f"{SVC_APPLE_DOMAIN}; got {ip_str}"
+            )
+
+
+# ===================================================================
+# Microsoft services blocking (real domain, AS8068-AS8075)
+# ===================================================================
+class TestMicrosoftServicesBlocking(ProfileHelpers):
+    """Verify ASN-based blocking for Microsoft services using real DNS.
+
+    Uses microsoft.com (a real domain) which resolves to IPs in AS8075.
+    Marked xfail(strict=False) because it depends on live external DNS.
+    """
+
+    def setup_class(self):
+        self.config = get_settings()
+        self.api_config = api_config.Configuration(host=self.config.DNS_API_ADDR)
+        self.dns_lib = DNSLib(self.config.DOH_ENDPOINT)
+
+    @pytest.mark.asyncio
+    @pytest.mark.xfail(
+        reason="Depends on microsoft.com resolving to Microsoft ASN (external DNS)",
+        strict=False,
+    )
+    async def test_microsoft_services_block_by_asn(self, create_account_and_login):
+        """Blocking the 'microsoft' service should cause microsoft.com
+        (AS8068-AS8075) to return 0.0.0.0."""
+        account, cookie = create_account_and_login
+        with client.ApiClient(self.api_config) as api_client:
+            p = api.ProfileApi(api_client)
+            p.api_client.default_headers["Cookie"] = cookie
+
+            if not await services_available(self.dns_lib, p, cookie):
+                pytest.skip("Services/ASN blocking not available (GeoIP DB missing?)")
+
+            profile_id = self._create_profile(p, "svc_block_msft")
+            self._block_service(p, profile_id, [SVC_MICROSOFT_ID])
+
+            resp = await self.dns_lib.send_doh_request(
+                profile_id, SVC_MICROSOFT_DOMAIN, A
+            )
+            ip_str = extract_ip(resp)
+            assert ip_str == "0.0.0.0", (
+                f"Services block for {SVC_MICROSOFT_ID} did not block "
+                f"{SVC_MICROSOFT_DOMAIN}; got {ip_str}"
             )
 
 

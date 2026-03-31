@@ -120,7 +120,7 @@ func TestFilterCustomRules(t *testing.T) {
 
 			// Create filter manager with mock cache
 			dnsProxy := &proxy.Proxy{}
-			fm := NewDomainFilter(dnsProxy, mockCache)
+			fm := NewDomainFilter(dnsProxy, mockCache, nil)
 
 			// Create DNS message
 			msg := new(dns.Msg)
@@ -313,7 +313,7 @@ func TestMatchDomain(t *testing.T) {
 	for _, tt := range tests {
 		mockCache := new(mocks.Cache)
 		proxy := &proxy.Proxy{}
-		fm := NewDomainFilter(proxy, mockCache)
+		fm := NewDomainFilter(proxy, mockCache, nil)
 		t.Run(tt.name, func(t *testing.T) {
 			got := fm.matchDomain(tt.domain, tt.pattern)
 			assert.Equal(t, tt.want, got)

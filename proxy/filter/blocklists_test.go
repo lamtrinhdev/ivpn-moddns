@@ -182,7 +182,7 @@ func TestFilterBlocklists(t *testing.T) {
 			}
 
 			dnsProxy := &proxy.Proxy{}
-			fm := NewDomainFilter(dnsProxy, mockCache)
+			fm := NewDomainFilter(dnsProxy, mockCache, nil)
 
 			msg := new(dns.Msg)
 			msg.SetQuestion(tt.questionDomain+".", dns.TypeA)

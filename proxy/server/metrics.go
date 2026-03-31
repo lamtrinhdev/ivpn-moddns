@@ -17,10 +17,10 @@ type Metrics interface {
 
 type noopMetrics struct{}
 
-func (noopMetrics) RecordQuery(string)                            {}
-func (noopMetrics) RecordProfileCacheLookup(bool)                 {}
-func (noopMetrics) RecordQueryDuration(string, time.Duration)     {}
+func (noopMetrics) RecordQuery(string)                               {}
+func (noopMetrics) RecordProfileCacheLookup(bool)                    {}
+func (noopMetrics) RecordQueryDuration(string, time.Duration)        {}
 func (noopMetrics) RecordDomainFilterDuration(string, time.Duration) {}
-func (noopMetrics) RecordIPFilterDuration(string, time.Duration)  {}
-func (noopMetrics) RecordUpstreamDuration(string, time.Duration)  {}
-func (noopMetrics) RecordBlocked(string)                          {}
+func (noopMetrics) RecordIPFilterDuration(string, time.Duration)     {}
+func (noopMetrics) RecordUpstreamDuration(string, time.Duration)     {}
+func (noopMetrics) RecordBlocked(string)                             {}
