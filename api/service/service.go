@@ -148,6 +148,10 @@ type ProfileServicer interface {
 	// Blocklists
 	EnableBlocklists(ctx context.Context, accountId, profileId string, blocklistIds []string) error
 	DisableBlocklists(ctx context.Context, accountId, profileId string, blocklistIds []string) error
+
+	// Services (ASN presets)
+	EnableServices(ctx context.Context, accountId, profileId string, serviceIds []string) error
+	DisableServices(ctx context.Context, accountId, profileId string, serviceIds []string) error
 }
 
 // QueryLogsServicer defines the interface for managing query logs

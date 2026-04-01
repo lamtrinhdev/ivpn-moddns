@@ -88,6 +88,7 @@ func (suite *AccountsAPITestSuite) createTestServer() *APIServer {
 		suite.validator,
 		mockMailer,
 		mockShortener,
+		nil,
 	)
 	suite.Require().NoError(err, "Failed to create test server")
 

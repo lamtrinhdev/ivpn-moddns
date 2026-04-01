@@ -73,6 +73,7 @@ func (suite *SubscriptionAPITestSuite) createTestServer() *APIServer {
 		suite.validator,
 		mockMailer,
 		mockShortener,
+		nil,
 	)
 	suite.Require().NoError(err, "Failed to create test server")
 	server.RegisterRoutes()

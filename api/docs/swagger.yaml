@@ -4,6 +4,8 @@ definitions:
       blocklist_ids:
         items:
           type: string
+        maxItems: 100
+        minItems: 1
         type: array
     required:
     - blocklist_ids
@@ -16,6 +18,17 @@ definitions:
         type: array
       error:
         type: string
+    type: object
+  api.ServicesUpdates:
+    properties:
+      service_ids:
+        items:
+          type: string
+        maxItems: 100
+        minItems: 1
+        type: array
+    required:
+    - service_ids
     type: object
   api.WebAuthnLoginBeginRequest:
     properties:
@@ -37,7 +50,11 @@ definitions:
   api.createProfileBody:
     properties:
       name:
+        maxLength: 50
+        minLength: 1
         type: string
+    required:
+    - name
     type: object
   api.registerAccountBody:
     properties:
@@ -120,6 +137,9 @@ definitions:
     properties:
       blocklist_id:
         type: string
+      category:
+        description: category key (only when kind=category)
+        type: string
       default:
         description: default blocklist is enabled when profile is created
         type: boolean
@@ -131,6 +151,12 @@ definitions:
       homepage:
         type: string
       id:
+        type: string
+      intensity:
+        description: basic, comprehensive, restrictive
+        type: string
+      kind:
+        description: general, category, security
         type: string
       last_modified:
         type: string
@@ -144,6 +170,7 @@ definitions:
           type: string
         type: array
       type:
+        description: 'ownership: public (platform-provided) or private (user-uploaded)'
         type: string
     required:
     - blocklist_id
@@ -233,6 +260,10 @@ definitions:
         - block
         - allow
         type: string
+      services:
+        items:
+          type: string
+        type: array
     required:
     - blocklists_subdomains_rule
     - default_rule
@@ -244,6 +275,7 @@ definitions:
       id:
         type: string
       name:
+        maxLength: 50
         type: string
       profile_id:
         type: string
@@ -737,15 +769,24 @@ definitions:
   requests.CreateProfileCustomRuleBody:
     properties:
       action:
+        enum:
+        - block
+        - allow
+        - comment
         type: string
       value:
         type: string
     required:
+    - action
     - value
     type: object
   requests.CreateProfileCustomRulesBatchBody:
     properties:
       action:
+        enum:
+        - block
+        - allow
+        - comment
         type: string
       values:
         items:
@@ -754,6 +795,7 @@ definitions:
         minItems: 1
         type: array
     required:
+    - action
     - values
     type: object
   requests.LoginBody:
@@ -883,6 +925,26 @@ definitions:
       expires_at:
         type: string
       reauth_token:
+        type: string
+    type: object
+  servicescatalog.Catalog:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/servicescatalog.Service'
+        type: array
+    type: object
+  servicescatalog.Service:
+    properties:
+      asns:
+        items:
+          type: integer
+        type: array
+      id:
+        type: string
+      logo_key:
+        type: string
+      name:
         type: string
     type: object
   webauthncose.COSEAlgorithmIdentifier:
@@ -1832,6 +1894,83 @@ paths:
       summary: Download profile query logs
       tags:
       - QueryLogs
+  /api/v1/profiles/{id}/services:
+    delete:
+      consumes:
+      - application/json
+      description: Disable services for a profile (removes from privacy.services)
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Services to disable
+        in: body
+        name: service_ids
+        required: true
+        schema:
+          $ref: '#/definitions/api.ServicesUpdates'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Disable services
+      tags:
+      - Profile
+    post:
+      consumes:
+      - application/json
+      description: Enable services for a profile (adds to privacy.services)
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Services to enable
+        in: body
+        name: service_ids
+        required: true
+        schema:
+          $ref: '#/definitions/api.ServicesUpdates'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Enable services
+      tags:
+      - Profile
   /api/v1/profiles/{id}/statistics:
     get:
       description: Get statistics data for a profile
@@ -1868,6 +2007,25 @@ paths:
       summary: Get statistics data for a profile
       tags:
       - Statistics
+  /api/v1/services:
+    get:
+      description: Get available ASN-based services presets
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/servicescatalog.Catalog'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get services catalog
+      tags:
+      - Services
   /api/v1/sessions:
     delete:
       description: Delete all sessions for the current account except the current

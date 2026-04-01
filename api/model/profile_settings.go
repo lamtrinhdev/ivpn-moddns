@@ -24,6 +24,7 @@ const (
 	SYNTAX_IPV6_CIDR                = "ip6_cidr"
 	SYNTAX_FQDN                     = "fqdn"
 	SYNTAX_FQDN_WILDCARD            = "fqdn_wildcard"
+	SYNTAX_ASN                      = "asn"
 	SYNTAX_UNKNOWN                  = "unknown_syntax"
 )
 
@@ -48,6 +49,7 @@ func NewSettings() *ProfileSettings {
 	return &ProfileSettings{
 		Privacy: &Privacy{
 			Blocklists:                make([]string, 0),
+			Services:                  make([]string, 0),
 			DefaultRule:               DEFAULT_RULE_ALLOW,
 			BlocklistsSubdomainsRule:  ACTION_BLOCK,
 			CustomRulesSubdomainsRule: CUSTOM_RULES_SUBDOMAINS_INCLUDE,
@@ -62,7 +64,7 @@ func NewSettings() *ProfileSettings {
 			Enabled:       false,
 			LogClientsIPs: false,
 			LogDomains:    true,
-			Retention:     RetentionOneHour,
+			Retention:     RetentionOneDay,
 		},
 		Statistics: &StatisticsSettings{
 			Enabled: false,
@@ -115,7 +117,7 @@ func (p CustomRuleSyntax) MarshalBinary() (data []byte, err error) {
 }
 
 var (
-	validations = []string{"fqdn", "ip4_addr", "ip6_addr", "fqdn_wildcard"}
+	validations = []string{"fqdn", "ip4_addr", "ip6_addr", "fqdn_wildcard", "asn"}
 )
 
 func NewCustomRuleSyntax(vldtr *validator.Validate, value string) (CustomRuleSyntax, error) {

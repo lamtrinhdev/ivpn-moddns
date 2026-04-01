@@ -30,7 +30,8 @@ class ModelPrivacy(BaseModel):
     blocklists_subdomains_rule: StrictStr
     custom_rules_subdomains_rule: Optional[StrictStr] = None
     default_rule: StrictStr
-    __properties: ClassVar[List[str]] = ["blocklists", "blocklists_subdomains_rule", "custom_rules_subdomains_rule", "default_rule"]
+    services: Optional[List[StrictStr]] = None
+    __properties: ClassVar[List[str]] = ["blocklists", "blocklists_subdomains_rule", "custom_rules_subdomains_rule", "default_rule", "services"]
 
     @field_validator('blocklists_subdomains_rule')
     def blocklists_subdomains_rule_validate_enum(cls, value):
@@ -110,7 +111,8 @@ class ModelPrivacy(BaseModel):
             "blocklists": obj.get("blocklists"),
             "blocklists_subdomains_rule": obj.get("blocklists_subdomains_rule"),
             "custom_rules_subdomains_rule": obj.get("custom_rules_subdomains_rule"),
-            "default_rule": obj.get("default_rule")
+            "default_rule": obj.get("default_rule"),
+            "services": obj.get("services")
         })
         return _obj
 

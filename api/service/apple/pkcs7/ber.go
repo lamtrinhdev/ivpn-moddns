@@ -126,7 +126,7 @@ func lengthLength(i int) (numBytes int) {
 func encodeLength(out *bytes.Buffer, length int) (err error) {
 	if length >= 128 {
 		l := lengthLength(length)
-		err = out.WriteByte(0x80 | byte(l))
+		err = out.WriteByte(0x80 | byte(l)) //nolint:gosec // G115 - l is from lengthLength(), always small
 		if err != nil {
 			return
 		}
@@ -135,7 +135,7 @@ func encodeLength(out *bytes.Buffer, length int) (err error) {
 			return
 		}
 	} else {
-		err = out.WriteByte(byte(length))
+		err = out.WriteByte(byte(length)) //nolint:gosec // G115 - length < 128 guaranteed by branch condition
 		if err != nil {
 			return
 		}

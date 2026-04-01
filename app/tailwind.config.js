@@ -15,6 +15,8 @@ module.exports = {
         desktop: { raw: '(min-width:1024px) and (hover:hover) and (pointer:fine)' },
         // Optional very wide desktop refinement (future use for ultra-wide adjustments)
         xlDesktop: { raw: '(min-width:1440px) and (hover:hover) and (pointer:fine)' },
+        // Landscape phone: short viewport in landscape orientation
+        'landscape-phone': { raw: '(orientation: landscape) and (max-height: 500px)' },
       },
       colors: {
         // Existing shadcn-ui colors
@@ -28,8 +30,11 @@ module.exports = {
         "shadcn-ui-app-secondary-foreground": "var(--shadcn-ui-app-secondary-foreground)",
         // Existing tailwind colors
         "tailwind-colors-base-white": "var(--tailwind-colors-base-white)",
+        "tailwind-colors-rdns-500": "var(--tailwind-colors-rdns-500)",
         "tailwind-colors-rdns-600": "var(--tailwind-colors-rdns-600)",
+        "tailwind-colors-rdns-700": "var(--tailwind-colors-rdns-700)",
         "tailwind-colors-rdns-800": "var(--tailwind-colors-rdns-800)",
+        "tailwind-colors-rdns-900": "var(--tailwind-colors-rdns-900)",
         "tailwind-colors-rdns-alpha-900": "var(--tailwind-colors-rdns-alpha-900)",
         "tailwind-colors-rdns-alpha-950": "var(--tailwind-colors-rdns-alpha-950)",
         "tailwind-colors-red-400": "var(--tailwind-colors-red-400)",
@@ -38,6 +43,7 @@ module.exports = {
         "tailwind-colors-sky-950": "var(--tailwind-colors-sky-950)",
         "tailwind-colors-slate-100": "var(--tailwind-colors-slate-100)",
         "tailwind-colors-slate-200": "var(--tailwind-colors-slate-200)",
+        "tailwind-colors-slate-300": "var(--tailwind-colors-slate-300)",
         "tailwind-colors-slate-400": "var(--tailwind-colors-slate-400)",
         "tailwind-colors-slate-50": "var(--tailwind-colors-slate-50)",
         "tailwind-colors-slate-500": "var(--tailwind-colors-slate-500)",

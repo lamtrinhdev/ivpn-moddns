@@ -14,7 +14,9 @@ import (
 // Config represents the application configuration
 type Config struct {
 	Server              *ServerConfig
+	Services            *ServicesConfig
 	Cache               *cache.Config
+	DNSCache            *DNSCacheConfig
 	CollectorQueryLogs  CollectorConfig
 	CollectorStatistics CollectorConfig
 	Emitter             *EmitterConfig
@@ -26,8 +28,43 @@ type Config struct {
 	DoQ                 *DoQConfig
 	Sentry              *SentryConfig
 	Log                 *LogConfig
+	RateLimit           *RateLimitConfig
+	Metrics             *MetricsConfig
 	TrustedProxies      []string
 	ProfileIDMinLength  int
+}
+
+// DNSCacheConfig configures the vendor (AdGuard) DNS response cache.
+type DNSCacheConfig struct {
+	Enabled    bool   // DNS_CACHE_ENABLED (default false)
+	Size       int    // DNS_CACHE_SIZE - per-upstream entries (default 256000)
+	SizeBytes  int    // DNS_CACHE_SIZE_BYTES - max bytes (default 0 = unlimited)
+	MinTTL     uint32 // DNS_CACHE_MIN_TTL (default 0)
+	MaxTTL     uint32 // DNS_CACHE_MAX_TTL (default 0 = no cap)
+	Optimistic bool   // DNS_CACHE_OPTIMISTIC (default false)
+}
+
+// Rate limit response modes.
+const (
+	RateLimitResponseDrop   = "drop"
+	RateLimitResponseRefuse = "refuse"
+)
+
+// RateLimitConfig holds rate limiter settings.
+type RateLimitConfig struct {
+	PerIPEnabled       bool
+	PerIPRate          int
+	PerIPBurst         int
+	PerIPResponse      string // "drop" (default) or "refuse"
+	PerProfileEnabled  bool
+	PerProfileRate     int
+	PerProfileBurst    int
+	PerProfileResponse string // "drop" or "refuse" (default)
+}
+
+// MetricsConfig holds Prometheus metrics server settings.
+type MetricsConfig struct {
+	Port int
 }
 
 // LogConfig represents the logging configuration
@@ -49,6 +86,13 @@ type ServerConfig struct {
 	DnsCheckDomain          string
 	DnsCheckPort            string
 	ProfileSettingsCacheTTL time.Duration
+}
+
+// ServicesConfig configures ASN-based services blocking.
+type ServicesConfig struct {
+	CatalogPath        string
+	CatalogReloadEvery time.Duration
+	GeoIPASNDBPath     string
 }
 
 // UpstreamConfig represents the upstream configuration
@@ -82,6 +126,12 @@ type DoTConfig struct {
 // DoQConfig represents the DNS-over-QUIC configuration
 type DoQConfig struct {
 	ListenAddr int
+}
+
+// getEnvBool returns true if the environment variable is set to "true" or "1" (case-insensitive).
+func getEnvBool(env string) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(env)))
+	return v == "true" || v == "1"
 }
 
 // GetEnvInt returns the integer value of an environment variable
@@ -133,6 +183,36 @@ func LoadUpstreamConfig(upstreamsEnv, defaultRecursorEnv string) (*UpstreamConfi
 		Upstreams: upstreams,
 		Default:   defaultRecursor,
 	}, nil
+}
+
+// loadDNSCacheConfig reads DNS response cache settings from environment variables.
+func loadDNSCacheConfig() *DNSCacheConfig {
+	cfg := &DNSCacheConfig{
+		Enabled:    getEnvBool("DNS_CACHE_ENABLED"),
+		Size:       256000,
+		Optimistic: getEnvBool("DNS_CACHE_OPTIMISTIC"),
+	}
+	if v := os.Getenv("DNS_CACHE_SIZE"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+			cfg.Size = parsed
+		}
+	}
+	if v := os.Getenv("DNS_CACHE_SIZE_BYTES"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed >= 0 {
+			cfg.SizeBytes = parsed
+		}
+	}
+	if v := os.Getenv("DNS_CACHE_MIN_TTL"); v != "" {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			cfg.MinTTL = uint32(parsed)
+		}
+	}
+	if v := os.Getenv("DNS_CACHE_MAX_TTL"); v != "" {
+		if parsed, err := strconv.ParseUint(v, 10, 32); err == nil {
+			cfg.MaxTTL = uint32(parsed)
+		}
+	}
+	return cfg
 }
 
 // New creates a new Config instance
@@ -207,6 +287,7 @@ func New() (*Config, error) {
 		dnsCheckDomain = "test.moddns.net"
 	}
 
+	dnsCacheCfg := loadDNSCacheConfig()
 	// Profile settings in-memory cache TTL (default 30s, "0" disables expiration)
 	profileSettingsCacheTTL := 30 * time.Second
 	if v := os.Getenv("PROFILE_SETTINGS_CACHE_TTL"); v != "" {
@@ -223,7 +304,24 @@ func New() (*Config, error) {
 	// Get Zerolog log level (default to "info" if not set or invalid)
 	zerologLevel := strings.ToLower(os.Getenv("LOG_LEVEL_PROXY"))
 
+	servicesCatalogPath := strings.TrimSpace(os.Getenv("SERVICES_CATALOG_PATH"))
+	if servicesCatalogPath == "" {
+		servicesCatalogPath = "/opt/services/catalog.yml"
+	}
+	servicesCatalogReloadEveryStr := strings.TrimSpace(os.Getenv("SERVICES_CATALOG_RELOAD"))
+	if servicesCatalogReloadEveryStr == "" {
+		servicesCatalogReloadEveryStr = "5m"
+	}
+	servicesCatalogReloadEvery, err := time.ParseDuration(servicesCatalogReloadEveryStr)
+	if err != nil {
+		return nil, err
+	}
+
+	geoIPASNDBPath := strings.TrimSpace(os.Getenv("GEOIP_DB_ASN_FILE"))
+
 	cacheAddrs := strings.Split(os.Getenv("CACHE_ADDRESSES"), ",")
+
+	rlCfg := loadRateLimitConfig()
 
 	return &Config{
 		Server: &ServerConfig{
@@ -232,6 +330,12 @@ func New() (*Config, error) {
 			DnsCheckPort:            os.Getenv("DNS_CHECK_PORT"),
 			ProfileSettingsCacheTTL: profileSettingsCacheTTL,
 		},
+		Services: &ServicesConfig{
+			CatalogPath:        servicesCatalogPath,
+			CatalogReloadEvery: servicesCatalogReloadEvery,
+			GeoIPASNDBPath:     geoIPASNDBPath,
+		},
+		DNSCache:           dnsCacheCfg,
 		TrustedProxies:     trustedProxies,
 		ProfileIDMinLength: profileIdMinLen,
 		Cache: &cache.Config{
@@ -242,11 +346,11 @@ func New() (*Config, error) {
 			FailoverPassword:      os.Getenv("CACHE_FAILOVER_PASSWORD"),
 			FailoverUsername:      os.Getenv("CACHE_FAILOVER_USERNAME"),
 			MasterName:            os.Getenv("CACHE_MASTER_NAME"),
-			TLSEnabled:            os.Getenv("CACHE_TLS_ENABLED") == "true",
+			TLSEnabled:            getEnvBool("CACHE_TLS_ENABLED"),
 			CertFile:              os.Getenv("CACHE_CERT_FILE"),
 			KeyFile:               os.Getenv("CACHE_KEY_FILE"),
 			CACertFile:            os.Getenv("CACHE_CA_CERT_FILE"),
-			TLSInsecureSkipVerify: os.Getenv("CACHE_TLS_INSECURE_SKIP_VERIFY") == "true",
+			TLSInsecureSkipVerify: getEnvBool("CACHE_TLS_INSECURE_SKIP_VERIFY"),
 		},
 		CollectorQueryLogs:  collectorQueryLogsCfg,
 		CollectorStatistics: collectorStatisticsCfg,
@@ -281,5 +385,47 @@ func New() (*Config, error) {
 			AdGuardLogLevel: adguardLogLevel,
 			ZerologLevel:    zerologLevel,
 		},
+		RateLimit: rlCfg,
+		Metrics:   loadMetricsConfig(),
 	}, nil
+}
+
+func loadRateLimitConfig() *RateLimitConfig {
+	cfg := &RateLimitConfig{
+		PerIPEnabled:       getEnvBool("RATELIMIT_PER_IP_ENABLED"),
+		PerIPRate:          2000,
+		PerIPBurst:         4000,
+		PerIPResponse:      RateLimitResponseDrop,
+		PerProfileEnabled:  os.Getenv("RATELIMIT_PER_PROFILE_ENABLED") != "false",
+		PerProfileRate:     600,
+		PerProfileBurst:    1000,
+		PerProfileResponse: RateLimitResponseRefuse,
+	}
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("RATELIMIT_PER_IP_RESPONSE"))); v == RateLimitResponseDrop || v == RateLimitResponseRefuse {
+		cfg.PerIPResponse = v
+	}
+	if v := strings.ToLower(strings.TrimSpace(os.Getenv("RATELIMIT_PER_PROFILE_RESPONSE"))); v == RateLimitResponseDrop || v == RateLimitResponseRefuse {
+		cfg.PerProfileResponse = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_IP")); err == nil && v > 0 {
+		cfg.PerIPRate = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_IP_BURST")); err == nil && v > 0 {
+		cfg.PerIPBurst = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_PROFILE")); err == nil && v > 0 {
+		cfg.PerProfileRate = v
+	}
+	if v, err := strconv.Atoi(os.Getenv("RATELIMIT_PER_PROFILE_BURST")); err == nil && v > 0 {
+		cfg.PerProfileBurst = v
+	}
+	return cfg
+}
+
+func loadMetricsConfig() *MetricsConfig {
+	cfg := &MetricsConfig{Port: 9153}
+	if v, err := strconv.Atoi(os.Getenv("METRICS_PORT")); err == nil && v >= 0 {
+		cfg.Port = v
+	}
+	return cfg
 }

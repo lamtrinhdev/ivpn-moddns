@@ -18,6 +18,14 @@ func parseBoolEnv(key string) bool {
 	return os.Getenv(key) == "true"
 }
 
+// envOrDefault returns the value of the environment variable or fallback if empty.
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 // Config represents the application configuration
 type Config struct {
 	Server  *ServerConfig
@@ -39,6 +47,8 @@ type ServiceConfig struct {
 	MaxProfiles                 int
 	MaxCredentials              int
 	SubscriptionCacheExpiration time.Duration
+	ServicesCatalogPath         string
+	ServicesCatalogReloadEvery  time.Duration
 }
 
 // SentryConfig represents the Sentry configuration
@@ -77,21 +87,15 @@ type APIConfig struct {
 type EmailSenderConfig struct {
 	SenderType string
 	InboxId    string
-	AuthToken  string
+	AuthToken  string //nolint:gosec // G117 - intentional sensitive field
 }
 
 // New creates a new Config instance
 func New() (*Config, error) {
 	cacheAddrs := strings.Split(os.Getenv("CACHE_ADDRESSES"), ",")
 
-	serverName := os.Getenv("SERVER_NAME")
-	if serverName == "" {
-		serverName = "modDNS API"
-	}
-	serverFQDN := os.Getenv("SERVER_FQDN")
-	if serverFQDN == "" {
-		serverFQDN = "app.moddns.net"
-	}
+	serverName := envOrDefault("SERVER_NAME", "modDNS API")
+	serverFQDN := envOrDefault("SERVER_FQDN", "app.moddns.net")
 
 	envAllowedDomains := os.Getenv("SERVER_ALLOWED_DOMAINS")
 	if envAllowedDomains == "" {
@@ -105,48 +109,28 @@ func New() (*Config, error) {
 	}
 	dnsServerAddresses := strings.Split(envDnsServerAddresses, ",")
 
-	otpExpStr := os.Getenv("OTP_EXPIRATION")
-	if otpExpStr == "" {
-		otpExpStr = "5m"
-	}
-	otpExp, err := time.ParseDuration(otpExpStr)
+	otpExp, err := time.ParseDuration(envOrDefault("OTP_EXPIRATION", "5m"))
 	if err != nil {
 		return nil, err
 	}
 
 	// subscription cache expiration (used for AddSubscription endpoint)
-	subCacheExpStr := os.Getenv("SUBSCRIPTION_CACHE_EXPIRATION")
-	if subCacheExpStr == "" {
-		subCacheExpStr = "15m"
-	}
-	subCacheExp, err := time.ParseDuration(subCacheExpStr)
+	subCacheExp, err := time.ParseDuration(envOrDefault("SUBSCRIPTION_CACHE_EXPIRATION", "15m"))
 	if err != nil {
 		return nil, err
 	}
 
-	sessionLimit := os.Getenv("API_SESSION_LIMIT")
-	if sessionLimit == "" {
-		sessionLimit = "10"
-	}
-	sessionLimitInt, err := strconv.ParseInt(sessionLimit, 10, 64)
+	sessionLimitInt, err := strconv.ParseInt(envOrDefault("API_SESSION_LIMIT", "10"), 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
-	sessionExpStr := os.Getenv("API_SESSION_EXPIRATION")
-	if sessionExpStr == "" {
-		sessionExpStr = "1h"
-	}
-	sessionExp, err := time.ParseDuration(sessionExpStr)
+	sessionExp, err := time.ParseDuration(envOrDefault("API_SESSION_EXPIRATION", "1h"))
 	if err != nil {
 		return nil, err
 	}
 
-	maxProfilesStr := os.Getenv("MAX_PROFILES")
-	if maxProfilesStr == "" {
-		maxProfilesStr = "100"
-	}
-	maxProfiles, err := strconv.Atoi(maxProfilesStr)
+	maxProfiles, err := strconv.Atoi(envOrDefault("MAX_PROFILES", "100"))
 	if err != nil {
 		return nil, err
 	}
@@ -160,33 +144,35 @@ func New() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	profileIDMinLenStr := os.Getenv("PROFILE_ID_MIN_LENGTH")
-	if profileIDMinLenStr == "" {
-		profileIDMinLenStr = "10"
+	profileIDMinLen, err := strconv.Atoi(envOrDefault("PROFILE_ID_MIN_LENGTH", "10"))
+	if err != nil {
+		return nil, err
 	}
-	profileIDMinLen, err := strconv.Atoi(profileIDMinLenStr)
-	if err != nil || profileIDMinLen <= 0 {
+	if profileIDMinLen <= 0 {
 		profileIDMinLen = 10
 	}
+
+	idLimiterMax, err := strconv.Atoi(envOrDefault("ID_LIMITER_MAX", "5"))
+	if err != nil {
+		return nil, err
+	}
+	idLimiterExpiration, err := time.ParseDuration(envOrDefault("ID_LIMITER_EXPIRATION", "1h"))
 	if err != nil {
 		return nil, err
 	}
 
-	idLimiterEnv := os.Getenv("ID_LIMITER_MAX")
-	if idLimiterEnv == "" {
-		idLimiterEnv = "5"
-	}
-	idLimiterMax, err := strconv.Atoi(idLimiterEnv)
+	servicesCatalogPath := envOrDefault("SERVICES_CATALOG_PATH", "/opt/services/catalog.yml")
+	servicesCatalogReloadEvery, err := time.ParseDuration(envOrDefault("SERVICES_CATALOG_RELOAD", "5m"))
 	if err != nil {
 		return nil, err
 	}
-	idLimiterExpirationStr := os.Getenv("ID_LIMITER_EXPIRATION")
-	if idLimiterExpirationStr == "" {
-		idLimiterExpirationStr = "1h"
+
+	// Warn about missing security-critical configuration.
+	if os.Getenv("API_PSK") == "" {
+		log.Warn().Msg("API_PSK is not set; the subscription provisioning endpoint will reject all requests")
 	}
-	idLimiterExpiration, err := time.ParseDuration(idLimiterExpirationStr)
-	if err != nil {
-		return nil, err
+	if os.Getenv("API_BASIC_AUTH_USER") == "" || os.Getenv("API_BASIC_AUTH_PASSWORD") == "" {
+		log.Warn().Msg("API_BASIC_AUTH_USER or API_BASIC_AUTH_PASSWORD is not set; Swagger docs endpoint will be unprotected")
 	}
 
 	return &Config{
@@ -259,6 +245,8 @@ func New() (*Config, error) {
 			MaxProfiles:                 maxProfiles,
 			MaxCredentials:              maxCredentials,
 			SubscriptionCacheExpiration: subCacheExp,
+			ServicesCatalogPath:         servicesCatalogPath,
+			ServicesCatalogReloadEvery:  servicesCatalogReloadEvery,
 		},
 		Sentry: &SentryConfig{
 			DSN:         os.Getenv("SENTRY_DSN"),

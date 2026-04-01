@@ -3,6 +3,7 @@ package profile
 import (
 	"context"
 	"net"
+	"strconv"
 	"strings"
 
 	dbErrors "github.com/ivpn/dns/api/db/errors"
@@ -34,7 +35,7 @@ type BulkCustomRuleResult struct {
 const (
 	duplicateExistingMessage = "Rule already exists on this profile."
 	duplicatePayloadMessage  = "Value appears more than once in this request."
-	invalidSyntaxMessage     = "Value must be a valid domain, wildcard, or IP address."
+	invalidSyntaxMessage     = "Value must be a valid domain, wildcard, IP address, or ASN."
 )
 
 // CreateCustomRule creates a new custom rule entry for a profile.
@@ -105,17 +106,25 @@ func (p *ProfileService) CreateCustomRulesBulk(ctx context.Context, accountId, p
 			normalized = "*" + normalized
 		}
 
-		// When custom_rules_subdomains is "include" (or empty/unset for backwards compat),
+		// Normalize ASN rules: allow both "AS15169" and "15169" inputs, store canonical digits only.
+		if asnNormalized, ok := normalizeASN(normalized); ok {
+			normalized = asnNormalized
+		}
+
+		// When custom_rules_subdomains_rule is "include" (or empty/unset for backwards compat),
 		// auto-prepend "*." to plain FQDN values so subdomains are included.
 		// Skip values that already express subdomain/non-FQDN semantics:
 		//   - wildcards (already contain "*")
 		//   - dot-prefix (".facebook.com" was already normalized to "*.facebook.com" above)
 		//   - IPs (v4/v6)
 		//   - CIDRs ("1.2.3.0/24", "2001:db8::/32" — contain "/")
+		//   - ASNs ("15169")
 		if profile.Settings.Privacy.CustomRulesSubdomainsRule != model.CUSTOM_RULES_SUBDOMAINS_EXACT {
 			if !strings.Contains(normalized, "*") && !strings.Contains(normalized, "/") &&
 				net.ParseIP(normalized) == nil {
-				normalized = "*." + normalized
+				if _, isASN := normalizeASN(normalized); !isASN {
+					normalized = "*." + normalized
+				}
 			}
 		}
 
@@ -175,6 +184,27 @@ func (p *ProfileService) CreateCustomRulesBulk(ctx context.Context, accountId, p
 	}
 
 	return result, nil
+}
+
+func normalizeASN(value string) (string, bool) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "", false
+	}
+
+	upper := strings.ToUpper(trimmed)
+	if strings.HasPrefix(upper, "AS") {
+		trimmed = strings.TrimSpace(trimmed[2:])
+	}
+	if trimmed == "" {
+		return "", false
+	}
+
+	parsed, err := strconv.ParseUint(trimmed, 10, 32)
+	if err != nil || parsed == 0 {
+		return "", false
+	}
+	return strconv.FormatUint(parsed, 10), true
 }
 
 // DeleteCustomRule removes a selected custom rule for the given profile.

@@ -51,6 +51,24 @@ func TestNewCustomRuleSyntaxValidIPv4(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			name:        "Valid ASN with prefix",
+			input:       "AS15169",
+			wantSyntax:  SYNTAX_ASN,
+			expectedErr: nil,
+		},
+		{
+			name:        "Valid ASN without prefix",
+			input:       "15169",
+			wantSyntax:  SYNTAX_ASN,
+			expectedErr: nil,
+		},
+		{
+			name:        "Invalid ASN (zero)",
+			input:       "AS0",
+			wantSyntax:  SYNTAX_UNKNOWN,
+			expectedErr: ErrInvalidCustomRuleSyntax,
+		},
+		{
 			name:        "EmptyInput",
 			input:       "",
 			wantSyntax:  SYNTAX_UNKNOWN,

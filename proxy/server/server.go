@@ -4,21 +4,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/getsentry/sentry-go"
 	"github.com/ivpn/dns/libs/logging"
+	"github.com/ivpn/dns/libs/servicescatalogcache"
 	"github.com/ivpn/dns/proxy/cache"
 	"github.com/ivpn/dns/proxy/cache/memory"
 	"github.com/ivpn/dns/proxy/collector/channel"
 	"github.com/ivpn/dns/proxy/config"
 	"github.com/ivpn/dns/proxy/filter"
+	"github.com/ivpn/dns/proxy/internal/asnlookup"
+	"github.com/ivpn/dns/proxy/internal/metrics"
+	"github.com/ivpn/dns/proxy/internal/ratelimit"
 	"github.com/ivpn/dns/proxy/model"
 	"github.com/ivpn/dns/proxy/requestcontext"
 	"github.com/miekg/dns"
 	gocache "github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 )
 
@@ -43,6 +50,8 @@ type Server struct {
 	ProfileSettingsCache *gocache.Cache
 	CollectorChannels    map[string]channel.CollectorChannel
 	LoggerFactory        logging.FactoryInterface
+	RateLimiter          *ratelimit.RateLimiter
+	Metrics              Metrics
 }
 
 var _ RequestManager = (*Server)(nil)
@@ -50,6 +59,8 @@ var _ RequestManager = (*Server)(nil)
 var (
 	errProfileIdNotProvided = errors.New("profile_id not provided")
 	errProfileIdNotFound    = errors.New("profile_id not found")
+	errRateLimitedIP        = errors.New("rate limited by IP")
+	errRateLimitedProfile   = errors.New("rate limited by profile")
 )
 
 func NewServer(serverConfig *config.Config, collectorChannels map[string]channel.CollectorChannel) (*Server, error) {
@@ -69,6 +80,15 @@ func NewServer(serverConfig *config.Config, collectorChannels map[string]channel
 	// In-memory profile settings cache to avoid Redis round-trips for warm profiles.
 	profileSettingsCache := gocache.New(serverConfig.Server.ProfileSettingsCacheTTL, 2*serverConfig.Server.ProfileSettingsCacheTTL)
 
+	rl := ratelimit.New(ratelimit.Config{
+		PerIPEnabled:      serverConfig.RateLimit.PerIPEnabled,
+		PerIPRate:         serverConfig.RateLimit.PerIPRate,
+		PerIPBurst:        serverConfig.RateLimit.PerIPBurst,
+		PerProfileEnabled: serverConfig.RateLimit.PerProfileEnabled,
+		PerProfileRate:    serverConfig.RateLimit.PerProfileRate,
+		PerProfileBurst:   serverConfig.RateLimit.PerProfileBurst,
+	}, metrics.NewRateLimitMetrics(prometheus.DefaultRegisterer))
+
 	server := &Server{
 		Config:               serverConfig,
 		Cache:                cache,
@@ -77,32 +97,74 @@ func NewServer(serverConfig *config.Config, collectorChannels map[string]channel
 		CollectorChannels:    collectorChannels,
 		Upstreams:            make(map[string]*proxy.CustomUpstreamConfig, 0),
 		LoggerFactory:        loggerFactory,
+		RateLimiter:          rl,
+		Metrics:              metrics.NewServerMetrics(prometheus.DefaultRegisterer),
 	}
 
 	dnsProxy, err := server.newProxy(ProxyTypeAdguard, serverConfig)
 	if err != nil {
 		return nil, err
 	}
-	DomainFltr, err := filter.NewFilter(dnsProxy, cache, filter.FilterTypeDomain)
-	if err != nil {
-		return nil, err
-	}
 
-	IPFltr, err := filter.NewFilter(dnsProxy, cache, filter.FilterTypeIP)
+	// Services ASN blocking dependencies — both catalog and GeoDB are required.
+	servicesCatalog, err := servicescatalogcache.New(serverConfig.Services.CatalogPath, serverConfig.Services.CatalogReloadEvery)
 	if err != nil {
-		return nil, err
+		log.Error().Err(err).Str("path", serverConfig.Services.CatalogPath).Msg("Failed to initialize services catalog")
+		return nil, fmt.Errorf("services catalog: %w", err)
 	}
+	go servicesCatalog.Start(context.Background())
 
-	server.DomainFilter = DomainFltr
-	server.IPFilter = IPFltr
+	lookup, err := asnlookup.New(serverConfig.Services.GeoIPASNDBPath)
+	if err != nil {
+		log.Error().Err(err).Str("path", serverConfig.Services.GeoIPASNDBPath).Msg("Failed to open ASN MMDB")
+		return nil, fmt.Errorf("ASN lookup: %w", err)
+	}
+	log.Info().Str("catalog", serverConfig.Services.CatalogPath).Str("geodb", serverConfig.Services.GeoIPASNDBPath).Msg("Services blocking enabled")
+
+	server.DomainFilter = filter.NewDomainFilter(dnsProxy, cache, servicesCatalog)
+	server.IPFilter = filter.NewIPFilter(dnsProxy, cache, servicesCatalog, lookup)
 	server.Proxy = dnsProxy
 
 	profileIDMinLength = serverConfig.ProfileIDMinLength
 	return server, nil
 }
 
+// postResolve runs IP filtering, emits query logs/statistics, and responds.
+// Called from ResponseHandler (cache miss) and RequestHandler (cache hit).
+func (s *Server) postResolve(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) {
+	if reqCtx.FilterResult.Status != model.StatusBlocked {
+		ipStart := time.Now()
+		if err := s.IPFilter.Execute(reqCtx, dctx); err != nil {
+			reqCtx.Logger.Err(err).Msg("IP Filtering error")
+		}
+		s.Metrics.RecordIPFilterDuration(string(dctx.Proto), time.Since(ipStart))
+		if reqCtx.FilterResult.Status == model.StatusBlocked {
+			s.Metrics.RecordBlocked("ip")
+		}
+	}
+	s.respond(reqCtx, dctx)
+	if !reqCtx.StartTime.IsZero() {
+		s.Metrics.RecordQueryDuration(string(dctx.Proto), time.Since(reqCtx.StartTime))
+	}
+	go s.EmitQueryLog(reqCtx, dctx)
+	go s.EmitStatistics(reqCtx, dctx)
+}
+
 func (s *Server) HandleBefore(p *proxy.Proxy, dctx *proxy.DNSContext) (err error) {
 	defer sentry.Recover()
+
+	s.Metrics.RecordQuery(string(dctx.Proto))
+
+	// Layer 1: per-IP rate limit (before any IO or profile extraction).
+	if !s.RateLimiter.CheckIP(dctx.Addr.Addr(), string(dctx.Proto)) {
+		if s.Config.RateLimit.PerIPResponse == config.RateLimitResponseRefuse {
+			return &proxy.BeforeRequestError{
+				Err:      errRateLimitedIP,
+				Response: s.refusedResponse(dctx.Req),
+			}
+		}
+		return errRateLimitedIP
+	}
 
 	profileId, deviceId, err := s.clientIDFromDNSContext(dctx)
 	if err != nil {
@@ -118,11 +180,24 @@ func (s *Server) HandleBefore(p *proxy.Proxy, dctx *proxy.DNSContext) (err error
 		systemLogger.Err(errProfileIdNotProvided).Msg(errProfileIdNotProvided.Error())
 		return errProfileIdNotProvided
 	} else {
+		// Layer 2: per-profile rate limit (after profile extraction, before Redis).
+		if !s.RateLimiter.CheckProfile(profileId, string(dctx.Proto)) {
+			if s.Config.RateLimit.PerProfileResponse == config.RateLimitResponseRefuse {
+				return &proxy.BeforeRequestError{
+					Err:      errRateLimitedProfile,
+					Response: s.refusedResponse(dctx.Req),
+				}
+			}
+			return errRateLimitedProfile
+		}
+
 		// Try in-memory profile settings cache first.
 		var settings *model.ProfileSettings
 		if cached, ok := s.ProfileSettingsCache.Get(profileId); ok {
+			s.Metrics.RecordProfileCacheLookup(true)
 			settings = cached.(*model.ProfileSettings)
 		} else {
+			s.Metrics.RecordProfileCacheLookup(false)
 			// Cache miss — fetch from Redis pipeline.
 			var fetchErr error
 			settings, fetchErr = s.Cache.GetProfileSettingsBatch(context.Background(), profileId)
@@ -211,6 +286,8 @@ func (s *Server) HandleBefore(p *proxy.Proxy, dctx *proxy.DNSContext) (err error
 		dctx.CustomUpstreamConfig = s.Upstreams[upstreamName]
 		reqLogger.Trace().Str("upstream", upstreamName).Msg("Upstream set")
 		reqCtx := requestcontext.NewRequestContext(context.Background(), p, profileId, deviceId, prvSettings, logsSettings, dnssecSettings, advancedSettings, reqLogger)
+		reqCtx.StartTime = time.Now()
+		reqCtx.UpstreamName = upstreamName
 		// TODO: set TTL for this request context - it's unnecessary to keep it in cache for long time since it's read right away in RequestHandler
 		// TODO: investigate other in-memory cache types
 		if err = s.InMemoryCache.SetRequestCtx(strconv.FormatUint(dctx.RequestID, 10), reqCtx); err != nil {
@@ -252,8 +329,13 @@ func (s *Server) RequestHandler() func(p *proxy.Proxy, dctx *proxy.DNSContext) (
 		}
 
 		// perform filtering actions
+		domainStart := time.Now()
 		if err = s.DomainFilter.Execute(reqCtx, dctx); err != nil {
 			reqLogger.Err(err).Msg("Filtering error")
+		}
+		s.Metrics.RecordDomainFilterDuration(string(dctx.Proto), time.Since(domainStart))
+		if reqCtx.FilterResult.Status == model.StatusBlocked {
+			s.Metrics.RecordBlocked("domain")
 		}
 
 		if err = s.InMemoryCache.SetRequestCtx(strconv.FormatUint(dctx.RequestID, 10)+"_response", reqCtx); err != nil {
@@ -263,14 +345,20 @@ func (s *Server) RequestHandler() func(p *proxy.Proxy, dctx *proxy.DNSContext) (
 
 		if reqCtx.FilterResult.Status == model.StatusProcessed {
 			reqLogger.Trace().Msg("Triggering default resolver")
+			upstreamStart := time.Now()
 			if err := s.Proxy.Resolve(dctx); err != nil {
 				reqLogger.Err(err).Msg("DNS resolving error")
 			}
-		} else {
-			if s.Proxy.ResponseHandler != nil {
-				reqLogger.Trace().Msg("Going to response handler")
-				s.Proxy.ResponseHandler(dctx, err)
+			s.Metrics.RecordUpstreamDuration(reqCtx.UpstreamName, time.Since(upstreamStart))
+			// For cache hits, ResponseHandler is skipped by the vendor.
+			// Run IP filtering, emit logs/stats, and respond manually.
+			if addr, ok := cachedUpstreamAddr(dctx); ok {
+				reqLogger.Trace().Str("cached_upstream", addr).Msg("Cache hit — running postResolve")
+				s.postResolve(reqCtx, dctx)
 			}
+		} else if s.Proxy.ResponseHandler != nil {
+			reqLogger.Trace().Msg("Going to response handler")
+			s.Proxy.ResponseHandler(dctx, err)
 		}
 
 		return nil
@@ -278,26 +366,33 @@ func (s *Server) RequestHandler() func(p *proxy.Proxy, dctx *proxy.DNSContext) (
 }
 
 func (s *Server) respond(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) {
-	var emptyResourceRecord string
-	switch dctx.Req.Question[0].Qtype {
-	case dns.TypeA:
-		emptyResourceRecord = "%s	30	IN	A	0.0.0.0"
-	case dns.TypeAAAA:
-		emptyResourceRecord = "%s	30	IN	AAAA	::"
-	default:
-		emptyResourceRecord = "%s	30	IN	A	0.0.0.0"
+	if reqCtx.FilterResult.Status != model.StatusBlocked {
+		return
 	}
 
-	if reqCtx.FilterResult.Status == model.StatusBlocked {
-		dctx.Res = dctx.Req
-		dctx.Res.MsgHdr.Response = true // Set QR flag to indicate this is a response
+	resp := new(dns.Msg)
+	resp.SetReply(dctx.Req)
+
+	switch dctx.Req.Question[0].Qtype {
+	case dns.TypeA:
 		q := dctx.Req.Question[0].Name
-		fakeRR, err := dns.NewRR(fmt.Sprintf(emptyResourceRecord, q))
-		if err != nil {
-			reqCtx.Logger.Err(err).Msg("Error creating fake RR")
-		}
-		dctx.Res.Answer = []dns.RR{fakeRR}
+		resp.Answer = []dns.RR{&dns.A{
+			Hdr: dns.RR_Header{Name: q, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 30},
+			A:   net.IPv4zero,
+		}}
+	case dns.TypeAAAA:
+		q := dctx.Req.Question[0].Name
+		resp.Answer = []dns.RR{&dns.AAAA{
+			Hdr:  dns.RR_Header{Name: q, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: 30},
+			AAAA: net.IPv6zero,
+		}}
+	default:
+		// For HTTPS, SVCB, and other record types: return empty answer (NODATA).
+		// An empty answer with NOERROR signals the domain exists but has no records
+		// of the requested type, which correctly blocks without type mismatch.
 	}
+
+	dctx.Res = resp
 }
 
 func (s *Server) ResponseHandler() func(dctx *proxy.DNSContext, err error) {
@@ -323,16 +418,9 @@ func (s *Server) ResponseHandler() func(dctx *proxy.DNSContext, err error) {
 
 		// Only continue if we have a valid request context
 		if ctxErr == nil {
-			// perform filtering actions
-			if err = s.IPFilter.Execute(reqCtx, dctx); err != nil {
-				logger.Err(err).Msg("IP Filtering error")
-			}
-
-			go s.EmitQueryLog(reqCtx, dctx)
-			go s.EmitStatistics(reqCtx, dctx)
-
-			s.respond(reqCtx, dctx)
+			s.postResolve(reqCtx, dctx)
 		}
+
 	}
 }
 
@@ -431,4 +519,27 @@ func (s *Server) buildDNSCheckResponse(origReq *dns.Msg, upstream *dns.Msg) *dns
 	}
 
 	return resp
+}
+
+// refusedResponse builds a minimal DNS REFUSED response for the given request.
+func (s *Server) refusedResponse(req *dns.Msg) *dns.Msg {
+	resp := new(dns.Msg)
+	resp.SetRcode(req, dns.RcodeRefused)
+	return resp
+}
+
+// cachedUpstreamAddr returns the upstream address and true if the DNS response
+// was served from the vendor cache. It uses QueryStatistics introduced in
+// dnsproxy v0.78.0 (replacing the removed CachedUpstreamAddr field).
+func cachedUpstreamAddr(dctx *proxy.DNSContext) (string, bool) {
+	stats := dctx.QueryStatistics()
+	if stats == nil {
+		return "", false
+	}
+	for _, s := range stats.Main() {
+		if s.IsCached {
+			return s.Address, true
+		}
+	}
+	return "", false
 }

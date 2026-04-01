@@ -1,27 +1,33 @@
-import React, { useState, useEffect, useRef, createContext, useContext } from "react";
+import React, { Suspense, useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 import { useHeaderStackHeight } from '@/lib/useHeaderStackHeight';
 import NavigationMenu from './pages/navigation_menu/NavigationMenu';
 import { useScreenDetector } from './hooks/useScreenDetector';
 import Header from './pages/header/Header';
+import BottomNav from './components/navigation/BottomNav';
 import ConnectionStatusHeader from './pages/header/ConnectionStatusHeader';
 import { NavigationCollapseProvider, useNavigationCollapse } from "@/context/NavigationCollapseContext";
-import Setup from './pages/setup/Setup';
-import Settings from './pages/settings/Settings';
-import PasswordReset from './pages/auth/PasswordReset';
-import PasswordResetConfirm from './pages/auth/PasswordResetConfirm';
-import Logs from './pages/logs/Logs';
-import Blocklists from './pages/blocklists/Blocklists'
-import CustomRules from './pages/custom_rules/CustomRules';
-import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
-import TermsOfService from './pages/legal/TermsOfService';
-import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
-import FAQ from "./pages/legal/FAQ";
-import NotFound from "./pages/NotFound";
-import AccountPreferences from '@/pages/account_preferences/Account';
-import MobileconfigPage from '@/pages/mobileconfig/MobileconfigPage';
-import MobileconfigDownload from '@/pages/mobileconfig/MobileconfigDownload';
-import HomeScreen from './pages/home/HomeScreen';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
+
+// Lazy-loaded page components (route-level code splitting)
+// Uses lazyWithRetry to handle HMR failures gracefully
+const Setup = lazyWithRetry(() => import('./pages/setup/Setup'));
+const Settings = lazyWithRetry(() => import('./pages/settings/Settings'));
+const PasswordReset = lazyWithRetry(() => import('./pages/auth/PasswordReset'));
+const PasswordResetConfirm = lazyWithRetry(() => import('./pages/auth/PasswordResetConfirm'));
+const Logs = lazyWithRetry(() => import('./pages/logs/Logs'));
+const Blocklists = lazyWithRetry(() => import('./pages/blocklists/Blocklists'));
+const CustomRules = lazyWithRetry(() => import('./pages/custom_rules/CustomRules'));
+const Login = lazyWithRetry(() => import('./pages/auth/Login'));
+const Signup = lazyWithRetry(() => import('./pages/auth/Signup'));
+const TermsOfService = lazyWithRetry(() => import('./pages/legal/TermsOfService'));
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/legal/PrivacyPolicy"));
+const FAQ = lazyWithRetry(() => import("./pages/legal/FAQ"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
+const AccountPreferences = lazyWithRetry(() => import('@/pages/account_preferences/Account'));
+const MobileconfigPage = lazyWithRetry(() => import('@/pages/mobileconfig/MobileconfigPage'));
+const MobileconfigDownload = lazyWithRetry(() => import('@/pages/mobileconfig/MobileconfigDownload'));
+const HomeScreen = lazyWithRetry(() => import('./pages/home/HomeScreen'));
+
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLoaderData, useLocation, useNavigate, redirect, ScrollRestoration } from 'react-router-dom';
 import { ThemeProvider } from "@/components/theme-provider"
 import api from "@/api/api";
@@ -177,13 +183,14 @@ async function rootLoader() {
       account,
       profiles,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
 
 
 
 
     if (error instanceof Response) throw error;
-    const status = error?.response?.status ?? error?.status ?? (error instanceof Error && (error as any).status);
+    const err = error as Record<string, unknown>;
+    const status = (err?.response as Record<string, unknown>)?.status ?? err?.status ?? (error instanceof Error && (error as Record<string, unknown>).status);
     if (status === 401 || status === 404) {
       // Dispatch a unified session expired event; AuthProvider subscriber performs cleanup + toast
       if (typeof window !== 'undefined') {
@@ -229,9 +236,10 @@ async function profilesOnlyLoader() {
       account: null,
       profiles,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof Response) throw error;
-    const status = error?.response?.status ?? error?.status ?? (error instanceof Error && (error as any).status);
+    const err = error as Record<string, unknown>;
+    const status = (err?.response as Record<string, unknown>)?.status ?? err?.status ?? (error instanceof Error && (error as Record<string, unknown>).status);
     if (status === 401 || status === 404) {
       if (typeof window !== 'undefined') {
         dispatch({ type: 'auth/sessionExpired' });
@@ -278,9 +286,11 @@ function ProtectedLayout() {
   const setRightPanelOpen = useAppStore((state) => state.setRightPanelOpen);
   const connectionStatusVisible = useAppStore((state) => state.connectionStatusVisible);
   const setConnectionStatusVisible = useAppStore((state) => state.setConnectionStatusVisible);
-  const { profiles } = useAppStore();
+  const profiles = useAppStore((state) => state.profiles);
   const location = useLocation();
   const { isDesktop, navDesktop, width: viewportWidth } = useScreenDetector();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const handleMoreClick = useCallback(() => setMobileNavOpen(true), []);
 
   const connectionHeaderRef = useRef<HTMLDivElement | null>(null);
   const mainHeaderRef = useRef<HTMLDivElement | null>(null);
@@ -356,73 +366,96 @@ function ProtectedLayout() {
     ? Math.max((viewportWidth - (sidebarWidth + ULTRAWIDE_CONTENT_MAX_WIDTH)) / 2, 0)
     : 0;
 
-  const contentMaxWidth = isDesktop ? DESKTOP_CONTENT_CLAMP : '100%';
+  // On non-desktop (tablets in landscape), cap content width so mx-auto centers it
+  const contentMaxWidth = isDesktop ? DESKTOP_CONTENT_CLAMP : 'min(100%, 1080px)';
 
   return (
-    <AppLayout>
-      {navDesktop && <div data-testid="persistent-sidebar"><NavigationMenu offsetLeft={shellOffset} /></div>}
+    <>
+      <AppLayout>
+        {navDesktop && <div data-testid="persistent-sidebar"><NavigationMenu offsetLeft={shellOffset} /></div>}
 
-      {isDesktop && connectionStatusVisible && (
+        {isDesktop && connectionStatusVisible && (
+          <div
+            ref={connectionHeaderRef}
+            className="fixed top-0 right-0 z-50 transition-all duration-500"
+            style={{ left: `${sidebarWidth + shellOffset}px`, right: `${headerRightOffset + shellOffset}px` }}
+          >
+            <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
+              <ConnectionStatusHeader />
+            </div>
+          </div>
+        )}
+
         <div
-          ref={connectionHeaderRef}
-          className="fixed top-0 right-0 z-50 transition-all duration-500"
-          style={{ left: `${sidebarWidth + shellOffset}px`, right: `${headerRightOffset + shellOffset}px` }}
+          ref={mainHeaderRef}
+          className={`fixed right-0 z-50 transition-all duration-500 ${isDesktop ? '' : 'left-0'}`}
+          style={isDesktop ? {
+            top: `${headerTopOffset}px`,
+            left: `${sidebarWidth + shellOffset}px`,
+            right: `${headerRightOffset + shellOffset}px`
+          } : {
+            top: '0px',
+            left: '0px',
+            right: '0px'
+          }}
         >
           <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
-            <ConnectionStatusHeader />
+            <Header
+              profiles={profiles || []}
+              showProfileDropdown={showProfileDropdown}
+              showLogoutButton={showLogoutButton}
+              showDialogTrigger={showDialogTrigger}
+              currentPageName={currentPageName}
+              showConnectionStatusRestoreButton={shouldShowConnectionStatusRestore}
+              onRestoreConnectionStatus={() => setConnectionStatusVisible(true)}
+            />
+          </div>
+        </div>
+
+        <div
+          data-testid="app-content"
+          className="transition-all duration-200 bg-[var(--shadcn-ui-app-background)] w-full overflow-x-hidden box-border"
+          style={isDesktop ? {
+            paddingTop: 'var(--app-header-stack, 64px)',
+            marginLeft: `${sidebarWidth + shellOffset}px`,
+            width: `calc(100vw - ${sidebarWidth + shellOffset}px - ${headerRightOffset + shellOffset}px)`,
+            minHeight: 'calc(100vh - (var(--app-header-stack, 64px)))',
+            maxWidth: '100vw'
+          } : {
+            paddingTop: 'var(--app-header-stack, 110px)',
+            paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
+            paddingLeft: '0px',
+            marginLeft: '0px',
+            width: '100%',
+            minHeight: 'calc(100dvh - 72px - env(safe-area-inset-bottom, 0px))',
+            maxWidth: '100vw'
+          }}
+        >
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
+            <Outlet />
+          </div>
+        </div>
+
+        {!navDesktop && <BottomNav onMoreClick={handleMoreClick} />}
+      </AppLayout>
+
+      {/* Mobile nav overlay – rendered outside AppLayout to avoid stacking context / overflow issues */}
+      {!navDesktop && (
+        <div className={`fixed inset-0 z-[100] ${mobileNavOpen ? '' : 'pointer-events-none'}`} data-testid="nav-overlay-wrapper">
+          <div
+            data-testid="nav-backdrop"
+            className={`fixed inset-0 bg-black/50 cursor-pointer transition-opacity duration-300 ${mobileNavOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <div
+            className={`fixed inset-y-0 left-0 w-[80%] max-w-[320px] bg-[var(--variable-collection-surface)] shadow-lg transition-transform duration-300 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}`}
+            data-testid="nav-overlay-panel"
+          >
+            <NavigationMenu isMobile={true} onClose={() => setMobileNavOpen(false)} />
           </div>
         </div>
       )}
-
-      <div
-        ref={mainHeaderRef}
-        className={`fixed right-0 z-50 transition-all duration-500 ${isDesktop ? '' : 'left-0'}`}
-        style={isDesktop ? {
-          top: `${headerTopOffset}px`,
-          left: `${sidebarWidth + shellOffset}px`,
-          right: `${headerRightOffset + shellOffset}px`
-        } : {
-          top: '0px',
-          left: '0px',
-          right: '0px'
-        }}
-      >
-        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
-          <Header
-            profiles={profiles || []}
-            showProfileDropdown={showProfileDropdown}
-            showLogoutButton={showLogoutButton}
-            showDialogTrigger={showDialogTrigger}
-            currentPageName={currentPageName}
-            showConnectionStatusRestoreButton={shouldShowConnectionStatusRestore}
-            onRestoreConnectionStatus={() => setConnectionStatusVisible(true)}
-          />
-        </div>
-      </div>
-
-      <div
-        data-testid="app-content"
-        className="transition-all duration-200 bg-[var(--shadcn-ui-app-background)] w-full overflow-x-hidden box-border"
-        style={isDesktop ? {
-          paddingTop: 'var(--app-header-stack, 64px)',
-          marginLeft: `${sidebarWidth + shellOffset}px`,
-          width: `calc(100vw - ${sidebarWidth + shellOffset}px - ${headerRightOffset + shellOffset}px)`,
-          minHeight: 'calc(100vh - (var(--app-header-stack, 64px)))',
-          maxWidth: '100vw'
-        } : {
-          paddingTop: 'var(--app-header-stack, 110px)',
-          paddingLeft: '0px',
-          marginLeft: '0px',
-          width: '100vw',
-          minHeight: 'calc(100vh - 72px)',
-          maxWidth: '100vw'
-        }}
-      >
-        <div className="mx-auto w-full px-4 sm:px-6 lg:px-8" style={{ maxWidth: contentMaxWidth }}>
-          <Outlet />
-        </div>
-      </div>
-    </AppLayout>
+    </>
   );
 }
 
@@ -436,49 +469,53 @@ function RootIndexRedirect() {
 
 function SetupWithLoader() {
   const { account, profiles } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
-  return <Setup account={account as ModelAccount} profiles={profiles} />;
+  return <Suspense fallback={<div />}><Setup account={account as ModelAccount} profiles={profiles} /></Suspense>;
 }
 
 function SettingsWithLoader() {
   const { profiles } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
-  return <Settings profiles={profiles} />;
+  return <Suspense fallback={<div />}><Settings profiles={profiles} /></Suspense>;
 }
 
 function BlocklistsWithLoader() {
-  return <Blocklists />;
+  return <Suspense fallback={<div />}><Blocklists /></Suspense>;
 }
 
 function CustomRulesWithLoader() {
   const { profiles } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
-  return <CustomRules profiles={profiles} />;
+  return <Suspense fallback={<div />}><CustomRules profiles={profiles} /></Suspense>;
 }
 
 function AccountPreferencesWithLoader() {
   const { account } = useLoaderData() as { account: ModelAccount | null };
-  return <AccountPreferences account={account} />;
+  return <Suspense fallback={<div />}><AccountPreferences account={account} /></Suspense>;
 }
 
 function MobileconfigWithLoader() {
-  return <MobileconfigPage />;
+  return <Suspense fallback={<div />}><MobileconfigPage /></Suspense>;
 }
 
 function QueryLogsWithLoader() {
   const { account, profiles } = useLoaderData() as { account: ModelAccount | null, profiles: ModelProfile[] };
-  return <Logs account={account as ModelAccount} profiles={profiles} />;
-}// LoginWrapper handles login and redirects after success
+  return <Suspense fallback={<div />}><Logs account={account as ModelAccount} profiles={profiles} /></Suspense>;
+}
+
+// LoginWrapper handles login and redirects after success
 function LoginWrapper() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const from = (location.state as Record<string, unknown>)?.from as Record<string, unknown> | undefined;
+  const fromPath = from?.pathname as string || "/home";
 
   React.useEffect(() => {
     if (isAuthenticated) {
       navigate("/home", { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, fromPath]);
 
   // Always render the Login component to avoid black screen issues
   // The redirect will happen in useEffect when authentication state updates
-  return <Login />;
+  return <Suspense fallback={<div />}><Login /></Suspense>;
 }
 
 // Component that handles API events inside Router context
@@ -518,13 +555,13 @@ const router = createBrowserRouter([
         element: <PublicLayout><Outlet /></PublicLayout>,
         children: [
           { path: "login", element: <LoginWrapper /> },
-          { path: "signup/:subid", element: <Signup /> },
-          { path: "tos", element: <TermsOfService /> },
-          { path: "privacy", element: <PrivacyPolicy /> },
-          { path: "faq", element: <FAQ /> },
-          { path: "reset-password", element: <PasswordReset /> },
-          { path: "reset-password/:token", element: <PasswordResetConfirm /> },
-          { path: "short/:code", element: <MobileconfigDownload /> },
+          { path: "signup/:subid", element: <Suspense fallback={<div />}><Signup /></Suspense> },
+          { path: "tos", element: <Suspense fallback={<div />}><TermsOfService /></Suspense> },
+          { path: "privacy", element: <Suspense fallback={<div />}><PrivacyPolicy /></Suspense> },
+          { path: "faq", element: <Suspense fallback={<div />}><FAQ /></Suspense> },
+          { path: "reset-password", element: <Suspense fallback={<div />}><PasswordReset /></Suspense> },
+          { path: "reset-password/:token", element: <Suspense fallback={<div />}><PasswordResetConfirm /></Suspense> },
+          { path: "short/:code", element: <Suspense fallback={<div />}><MobileconfigDownload /></Suspense> },
         ]
       },
 
@@ -534,7 +571,7 @@ const router = createBrowserRouter([
         element: <ProtectedLayout />,
         errorElement: <RouterErrorBoundary />, // Protected route errors
         children: [
-          { loader: rootLoader, path: "home", element: <HomeScreen /> },
+          { loader: rootLoader, path: "home", element: <Suspense fallback={<div />}><HomeScreen /></Suspense> },
           { loader: rootLoader, path: "setup", element: <SetupWithLoader /> },
           { loader: rootLoader, path: "settings", element: <SettingsWithLoader /> },
           { loader: profilesOnlyLoader, path: "blocklists", element: <BlocklistsWithLoader /> },
@@ -546,17 +583,16 @@ const router = createBrowserRouter([
       },
 
       // 404 CATCH-ALL for any unmatched routes (within first-level children)
-      { path: "*", element: <NotFound /> },
+      { path: "*", element: <Suspense fallback={<div />}><NotFound /></Suspense> },
     ],
   },
   // Global catch-all (extra safety) - can be retained or removed
-  { path: "*", element: <NotFound /> },
+  { path: "*", element: <Suspense fallback={<div />}><NotFound /></Suspense> },
 ]);
 
 function App() {
-  useEffect(() => {
-    document.body.setAttribute('data-shadcn-ui-mode', 'dark-emerald');
-  }, []);
+  // Note: data-shadcn-ui-mode attribute is now managed by ThemeProvider
+  // to sync with the current theme selection
 
   return (
     <ApiErrorBoundary>
@@ -569,4 +605,5 @@ function App() {
 
 
 export default App;
+// eslint-disable-next-line react-refresh/only-export-components
 export { useAuth, AuthContext, RootIndexRedirect };

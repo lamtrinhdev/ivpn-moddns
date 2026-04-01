@@ -2,7 +2,6 @@ import React, { Component, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { RefreshCw, Home } from 'lucide-react';
-import { useNavigate } from "react-router-dom"
 
 interface Props {
   children: ReactNode;
@@ -37,8 +36,7 @@ export class ApiErrorBoundary extends Component<Props, State> {
   };
 
   handleGoHome = () => {
-    // Use callback if provided, otherwise fallback to window.location
-    useNavigate()("/setup");
+    window.location.href = "/setup";
   };
 
   render() {
@@ -49,7 +47,7 @@ export class ApiErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="fixed inset-0 flex items-center justify-center bg-background p-4">
-          <Card className="w-full max-w-md p-8 bg-[var(--tailwind-colors-slate-900)] border-[var(--tailwind-colors-slate-600)] shadow-2xl">
+          <Card className="w-full max-w-md p-8 bg-[var(--variable-collection-surface)] border-[var(--shadcn-ui-app-border)] shadow-2xl">
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold text-[var(--tailwind-colors-slate-50)]">

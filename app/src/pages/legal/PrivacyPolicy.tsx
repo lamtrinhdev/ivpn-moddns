@@ -2,23 +2,28 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
-import modDNSLogo from '@/assets/logos/modDNS.svg';
+import modDNSLogoDarkTheme from '@/assets/logos/modDNS-dark-theme.svg';
+import modDNSLogoLightTheme from '@/assets/logos/modDNS-light-theme.svg';
+import { useTheme } from "@/components/theme-provider";
 import AuthFooter from "@/components/auth/AuthFooter";
 
 export default function PrivacyPolicy() {
     const navigate = useNavigate();
+    const { theme } = useTheme();
+    const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const location = useLocation();
     const hasHistory = location.key !== "default";
 
     return (
-        <div className="relative min-h-screen w-full overflow-x-hidden bg-[var(--shadcn-ui-app-background)]">
+        <div className="relative min-h-screen w-full overflow-x-hidden bg-[var(--public-page-background)]">
             <div className="relative z-10 py-8">
                 <div className="w-full max-w-4xl mx-auto p-8">
                     {hasHistory && (
                         <div className="mb-6">
                             <Button
+                                variant="ghost"
                                 onClick={() => navigate(-1)}
-                                className="flex items-center gap-2 text-[var(--tailwind-colors-rdns-600)] hover:text-[var(--tailwind-colors-rdns-700)] bg-transparent hover:bg-transparent border-none p-0 font-inherit cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-1.5 h-auto min-h-0 text-[var(--tailwind-colors-rdns-600)] hover:text-[var(--tailwind-colors-rdns-700)] hover:bg-black/5 dark:hover:bg-white/10 rounded-md"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 Back
@@ -32,7 +37,7 @@ export default function PrivacyPolicy() {
                                 <img
                                     className="mb-4 w-[200px] h-10 mx-auto"
                                     alt="modDNS logo"
-                                    src={modDNSLogo}
+                                    src={isDarkMode ? modDNSLogoDarkTheme : modDNSLogoLightTheme}
                                 />
                                 <h1 className="text-2xl font-bold text-[var(--shadcn-ui-app-foreground)] text-center font-mono">
                                     Privacy Policy
@@ -41,7 +46,7 @@ export default function PrivacyPolicy() {
                                 <div className="space-y-6">
                                     <div className="mb-6">
                                         <p className="text-sm text-[var(--shadcn-ui-app-muted-foreground)] mb-4">
-                                            Last updated: Mar 16, 2026
+                                            Last updated: Mar 23, 2026
                                         </p>
                                     </div>
 
@@ -161,10 +166,10 @@ export default function PrivacyPolicy() {
                                             Within your profile settings, you can independently enable or disable the logging of queried domains and client IP Addresses.
                                         </p>
                                         <p className="text-[var(--shadcn-ui-app-foreground)] leading-relaxed mb-4">
-                                            You also have full control over the data retention period, which can be set from a minimum of 1 hour to a maximum of 1 month. The default retention period is 1 hour. When you change the retention period setting, any existing logs that exceed the new timeframe are immediately deleted from our systems.
+                                            You also have full control over the data retention period, which can be set from a minimum of 1 hour to a maximum of 1 month. The default retention period is 1 hour.
                                         </p>
                                         <p className="text-[var(--shadcn-ui-app-foreground)] leading-relaxed">
-                                            You can permanently delete all stored query logs at any time from your dashboard.
+                                            Query log entries are automatically and permanently deleted once they exceed the retention period. When you change the retention period setting, any existing logs that exceed the new timeframe are immediately deleted from our systems. You can permanently delete all stored query logs at any time from your dashboard.
                                         </p>
                                     </section>
 

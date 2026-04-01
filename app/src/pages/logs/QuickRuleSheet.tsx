@@ -179,7 +179,7 @@ const QuickRuleSheet = ({ open, onOpenChange, domain, defaultAction }: QuickRule
                             <ToggleGroupItem
                                 value="denylist"
                                 aria-label="Block domain"
-                                className="flex-1 px-3 py-3 transition-all duration-500 cursor-pointer data-[state=on]:bg-[var(--tailwind-colors-rdns-600)] data-[state=on]:text-[var(--tailwind-colors-slate-900)] data-[state=on]:border-[var(--tailwind-colors-rdns-600)]"
+                                className="flex-1 px-3 py-3 transition-all duration-500 cursor-pointer data-[state=on]:bg-[var(--tailwind-colors-rdns-600)] data-[state=on]:text-[var(--tailwind-colors-slate-900)] data-[state=on]:border-[var(--tailwind-colors-rdns-600)] [:root:not(.dark)_&]:data-[state=off]:border-[var(--tailwind-colors-slate-light-300)]"
                             >
                                 <ShieldBan className={iconClasses} />
                                 <span className="text-sm font-medium">Block</span>
@@ -187,7 +187,7 @@ const QuickRuleSheet = ({ open, onOpenChange, domain, defaultAction }: QuickRule
                             <ToggleGroupItem
                                 value="allowlist"
                                 aria-label="Allow domain"
-                                className="flex-1 px-3 py-3 transition-all duration-500 cursor-pointer data-[state=on]:bg-[var(--tailwind-colors-rdns-600)] data-[state=on]:text-[var(--tailwind-colors-slate-900)] data-[state=on]:border-[var(--tailwind-colors-rdns-600)]"
+                                className="flex-1 px-3 py-3 transition-all duration-500 cursor-pointer data-[state=on]:bg-[var(--tailwind-colors-rdns-600)] data-[state=on]:text-[var(--tailwind-colors-slate-900)] data-[state=on]:border-[var(--tailwind-colors-rdns-600)] [:root:not(.dark)_&]:data-[state=off]:border-[var(--tailwind-colors-slate-light-300)]"
                             >
                                 <ShieldCheck className={iconClasses} />
                                 <span className="text-sm font-medium">Allow</span>
@@ -209,6 +209,9 @@ const QuickRuleSheet = ({ open, onOpenChange, domain, defaultAction }: QuickRule
                             readOnly
                             onKeyDown={handleDomainKeyDown}
                             autoComplete="off"
+                            autoCapitalize="none"
+                            spellCheck={false}
+                            autoCorrect="off"
                             className="caret-transparent cursor-default focus-visible:ring-0"
                         />
                         <p className="text-xs text-[var(--tailwind-colors-slate-500)]">

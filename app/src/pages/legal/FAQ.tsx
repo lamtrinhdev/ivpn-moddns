@@ -3,7 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, ChevronDown } from "lucide-react";
-import modDNSLogo from '@/assets/logos/modDNS.svg';
+import modDNSLogoDarkTheme from '@/assets/logos/modDNS-dark-theme.svg';
+import modDNSLogoLightTheme from '@/assets/logos/modDNS-light-theme.svg';
+import { useTheme } from "@/components/theme-provider";
 import AuthFooter from "@/components/auth/AuthFooter";
 
 interface FAQItemProps {
@@ -38,7 +40,7 @@ function FAQItem({ question, answer, globalToggleSignal, globalToggleState }: FA
     };
 
     return (
-        <div className="mb-4 border border-[var(--shadcn-ui-app-border)] rounded-lg overflow-hidden bg-[var(--shadcn-ui-app-card)]">
+        <div className="mb-4 border border-[var(--tailwind-colors-slate-light-300)] dark:border-transparent rounded-lg overflow-hidden bg-transparent dark:bg-[var(--variable-collection-surface)]">
             <button
                 className="w-full p-4 text-left hover:bg-[var(--shadcn-ui-app-muted)] transition-colors duration-200 flex items-center justify-between"
                 onClick={handleToggle}
@@ -105,6 +107,8 @@ export default function FAQ(): JSX.Element {
     const hasHistory = location.key !== "default";
     const [toggleSignal, setToggleSignal] = useState(0);
     const [toggleState, setToggleState] = useState(false);
+    const { theme } = useTheme();
+    const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const toggleAllFAQs = () => {
         setToggleState(!toggleState);
@@ -166,10 +170,10 @@ export default function FAQ(): JSX.Element {
         <div className="space-y-2">
             <p>Click the 'Custom Rules' tab on the left side of the page. Two tabs are available:</p>
             <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Denylist entries</strong> help block specific domains not covered by blocklists</li>
-                <li><strong>Allowlist</strong> specifies domains that should be allowed even if they appear on active blocklists</li>
+                <li><strong>Denylist entries</strong> help block specific domains, IP addresses, or ASNs not covered by blocklists</li>
+                <li><strong>Allowlist</strong> specifies domains, IP addresses, or ASNs that should be allowed even if they appear on active blocklists</li>
             </ul>
-            <p>Enter a domain or IP address in the text entry field (for example <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">facebook.com</code>), then click the green '+ Add' button.</p>
+            <p>Enter a domain, IP address, or ASN in the text entry field (for example <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">AS15169</code>), then click the green '+ Add' button.</p>
         </div>
     );
 
@@ -181,17 +185,31 @@ export default function FAQ(): JSX.Element {
                 <li><strong>Include</strong> (default): Plain domains are automatically expanded to include subdomains (<code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">facebook.com</code> → <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">*.facebook.com</code>)</li>
                 <li><strong>Exact</strong>: Domains are stored exactly as entered. To include subdomains, you must explicitly use a wildcard (<code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">*.facebook.com</code>)</li>
             </ul>
-            <p>This setting only affects new rules. Existing rules are not changed when you toggle the setting. IP addresses are not affected by this setting.</p>
-        </div>
+            <p>This setting only affects new rules. Existing rules are not changed when you toggle the setting. IP addresses and ASNs are not affected by this setting.</p>
+        </div >
     );
 
     const customRulesSupportedInputs = (
         <div className="space-y-2">
-            <p>Custom Rules support two types of entries:</p>
+            <p>Custom Rules support three types of entries:</p>
             <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Domains</strong> (including wildcards, like <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">*.example.com</code>)</li>
                 <li><strong>IP addresses</strong> (single IPv4/IPv6 addresses)</li>
+                <li><strong>ASNs</strong> (for example <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">AS15169</code> or <code className="bg-[var(--shadcn-ui-app-muted)] text-[var(--shadcn-ui-app-foreground)] px-2 py-0.5 rounded text-sm font-mono border border-[var(--shadcn-ui-app-border)]">15169</code>)</li>
             </ul>
+            <p>ASN rules are applied to the resolved IP address (after DNS resolution), not the domain string itself.</p>
+        </div >
+    );
+
+    const servicesBlockingInfo = (
+        <div className="space-y-2">
+            <p>The Services tab lets you block large services (for example a major platform or CDN) using a curated catalog.</p>
+            <p>When you enable blocking for a service, modDNS can block:</p>
+            <ul className="list-disc pl-5 space-y-1">
+                <li><strong>Known domains</strong> associated with the service</li>
+                <li><strong>Traffic routed via the service</strong>, based on the service's IP network ownership (ASN) when available</li>
+            </ul>
+            <p>If blocking a service causes issues, you can add specific domains, IP addresses, or ASNs to your allowlist to override blocks.</p>
         </div>
     );
 
@@ -203,8 +221,8 @@ export default function FAQ(): JSX.Element {
                 <li><strong>Otherwise, blocking applies.</strong> If there is no allow match but a denylist/service/blocklist match exists, the request is blocked.</li>
                 <li><strong>Otherwise, the default rule applies</strong> (your profile's Default rule setting).</li>
             </ul>
-            <p>This applies consistently whether the match comes from domains or IP addresses.</p>
-        </div>
+            <p>This applies consistently whether the match comes from domains, IP addresses, or ASNs.</p>
+        </div >
     );
 
     const wildcardRules = (
@@ -452,6 +470,10 @@ export default function FAQ(): JSX.Element {
                     answer={blocklistsInstructions}
                 />
                 <FAQItem
+                    question="What is service blocking (Services tab)?"
+                    answer={servicesBlockingInfo}
+                />
+                <FAQItem
                     question="Can I block all DNS queries, instead of allowing all by default?"
                     answer={howToBlockAllQueries}
                 />
@@ -531,14 +553,15 @@ export default function FAQ(): JSX.Element {
     );
 
     return (
-        <div className="relative min-h-screen w-full overflow-x-hidden bg-[var(--shadcn-ui-app-background)]">
+        <div className="relative min-h-screen w-full overflow-x-hidden bg-[var(--public-page-background)]">
             <div className="relative z-10 py-8">
                 <div className="w-full max-w-4xl mx-auto p-8">
                     {hasHistory && (
                         <div className="mb-6">
                             <Button
+                                variant="ghost"
                                 onClick={() => navigate(-1)}
-                                className="flex items-center gap-2 text-[var(--tailwind-colors-rdns-600)] hover:text-[var(--tailwind-colors-rdns-700)] bg-transparent hover:bg-transparent border-none p-0 font-inherit cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-1.5 h-auto min-h-0 text-[var(--tailwind-colors-rdns-600)] hover:text-[var(--tailwind-colors-rdns-700)] hover:bg-black/5 dark:hover:bg-white/10 rounded-md"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 Back
@@ -551,8 +574,8 @@ export default function FAQ(): JSX.Element {
                             <div className="flex flex-col items-center mb-8">
                                 <img
                                     className="mb-4 w-[200px] h-10 mx-auto"
-                                    alt="moddns logo"
-                                    src={modDNSLogo}
+                                    alt="modDNS logo"
+                                    src={isDarkMode ? modDNSLogoDarkTheme : modDNSLogoLightTheme}
                                 />
                                 <h1 className="text-2xl font-bold text-[var(--shadcn-ui-app-foreground)] text-center font-mono">
                                     FAQ

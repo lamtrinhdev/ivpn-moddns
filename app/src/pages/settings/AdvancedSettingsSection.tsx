@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import RecursorChoiceSection from "@/pages/settings/RecursorChoiceSection";
 
 interface AdvancedSettingsSectionProps {
-    advancedSettings: any[];
+    advancedSettings: { title: string; description: string; options: { value: string; label: string; icon?: string }[]; value: string }[];
     advancedLoading: boolean;
     handleAdvancedChange: (idx: number, value: string) => void;
     currentRecursor: string;
@@ -25,7 +25,7 @@ const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
     };
 
     return (
-        <Card className="w-full border-none">
+        <Card className="w-full bg-transparent dark:bg-[var(--variable-collection-surface)] border border-[var(--tailwind-colors-slate-light-300)] dark:border-transparent">
             <CardContent>
                 <div className="flex flex-col items-start gap-6 w-full">
                     <div className="flex items-center gap-2 w-full">

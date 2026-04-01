@@ -43,7 +43,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
             await api.Client.queryLogsApi.apiV1ProfilesIdLogsDelete(activeProfile.profile_id);
             toast.success("Query logs cleared.");
             setShowClearDialog(false);
-        } catch (_err: unknown) {
+        } catch {
             toast.error("Failed to clear query logs.");
         } finally {
             setClearLoading(false);
@@ -51,7 +51,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
     };
 
     return (
-        <Card className="w-full border-none">
+        <Card className="w-full bg-transparent dark:bg-[var(--variable-collection-surface)] border border-[var(--tailwind-colors-slate-light-300)] dark:border-transparent">
             <CardContent>
                 <div className="flex flex-col items-start gap-6 w-full">
                     <div className="flex items-center gap-2 w-full">
@@ -98,7 +98,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
                                         type="button"
                                         aria-label="Retention period information"
                                         data-testid="retention-info-trigger"
-                                        className="p-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tailwind-colors-rdns-600)] text-[var(--tailwind-colors-slate-300)] hover:text-[var(--tailwind-colors-slate-50)] transition-colors"
+                                        className="min-w-10 min-h-10 flex items-center justify-center rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tailwind-colors-rdns-600)] text-[var(--tailwind-colors-slate-300)] hover:text-[var(--tailwind-colors-slate-50)] transition-colors"
                                     >
                                         <Info size={16} strokeWidth={2} />
                                     </button>
@@ -142,7 +142,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
                         <Button
                             variant="outline"
-                            className="px-4 py-2 rounded bg-[var(--tailwind-colors-rdns-600)] border-[var(--tailwind-colors-slate-600)] text-[var(--tailwind-colors-slate-50)] w-full sm:w-auto"
+                            className="px-4 py-2 rounded bg-[var(--tailwind-colors-rdns-600)] border-[var(--tailwind-colors-slate-600)] text-white w-full sm:w-auto"
                             onClick={async () => {
                                 try {
                                     // Request JSON (array of query logs). Avoid forcing blob response which led to JSON.stringify(Blob) -> '{}'.
@@ -179,7 +179,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
                                     link.remove();
                                     window.URL.revokeObjectURL(url);
                                     toast.success("Query logs download started.");
-                                } catch (_err: unknown) {
+                                } catch {
                                     toast.error("Failed to download query logs.");
                                 }
                             }}
@@ -187,10 +187,10 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
                             Download query logs
                         </Button>
                         <Button
-                            className="px-4 py-2 rounded bg-[var(--tailwind-colors-red-600)] text-[var(--tailwind-colors-slate-50)] hover:bg-[var(--tailwind-colors-red-400)] transition-colors w-full sm:w-auto"
+                            className="h-auto min-h-11 lg:min-h-0 flex items-center justify-center px-2 py-1.5 bg-[var(--tailwind-colors-red-600)] rounded-[var(--primitives-radius-radius-md)] gap-1 hover:bg-[var(--tailwind-colors-red-400)] w-full sm:w-auto"
                             onClick={() => setShowClearDialog(true)}
                         >
-                            Clear query logs
+                            <span className="text-white">Clear query logs</span>
                         </Button>
                     </div>
                 </div>
@@ -222,7 +222,7 @@ const QueryLogsSection: React.FC<QueryLogsSectionProps> = ({
                         <Button
                             variant="default"
                             size="lg"
-                            className="flex-1 min-w-32 bg-[var(--tailwind-colors-red-600)] text-[var(--tailwind-colors-slate-50)] hover:!bg-[var(--tailwind-colors-red-700)]"
+                            className="flex-1 min-w-32 bg-[var(--tailwind-colors-red-600)] text-white hover:bg-[var(--tailwind-colors-red-400)]"
                             onClick={handleClearLogs}
                             disabled={clearLoading}
                         >

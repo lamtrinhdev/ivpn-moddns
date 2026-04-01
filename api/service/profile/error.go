@@ -23,4 +23,7 @@ var (
 	ErrRecursorInvalid              = fmt.Errorf("recursor value is invalid. Allowed values: %v", model.RECURSORS)
 	ErrMaxProfilesLimitReached      = errors.New("maximum number of profiles reached")
 	ErrQueryLogsRateLimited         = errors.New("query logs rate limited")
+	ErrServiceNotFound              = errors.New("service not found")
+	ErrServiceAlreadyEnabled        = errors.New("service already enabled")
+	ErrInvalidServiceValue          = errors.New("invalid service value")
 )

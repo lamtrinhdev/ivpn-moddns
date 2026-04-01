@@ -79,8 +79,9 @@ export default function TwoFactorAuthDialog({ open, onOpenChange, onEnabled }: T
             setOtp(""); // Clear OTP after successful confirmation
             toast.success("2FA enabled successfully.");
             // Do NOT call onEnabled here, wait for user confirmation
-        } catch (e: any) {
-            toast.error(e?.response?.data?.detail || "Failed to enable 2FA.");
+        } catch (e: unknown) {
+            const axiosErr = e as { response?: { data?: { detail?: string } } };
+            toast.error(axiosErr?.response?.data?.detail || "Failed to enable 2FA.");
         } finally {
             setEnabling(false);
         }
@@ -243,6 +244,8 @@ export default function TwoFactorAuthDialog({ open, onOpenChange, onEnabled }: T
 
                                 <Input
                                     id="totp-code"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     className="h-10 bg-[var(--tailwind-colors-slate-800)] border-[var(--tailwind-colors-slate-700)] rounded-md"
                                     disabled={loading || enabling}
                                     value={otp}

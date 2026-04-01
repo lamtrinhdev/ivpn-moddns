@@ -619,6 +619,74 @@ func (_c *Cache_GetProfilePrivacySettings_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// GetProfileServicesBlocked provides a mock function for the type Cache
+func (_mock *Cache) GetProfileServicesBlocked(ctx context.Context, profileId string) ([]string, error) {
+	ret := _mock.Called(ctx, profileId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetProfileServicesBlocked")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
+		return returnFunc(ctx, profileId)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []string); ok {
+		r0 = returnFunc(ctx, profileId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, profileId)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// Cache_GetProfileServicesBlocked_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetProfileServicesBlocked'
+type Cache_GetProfileServicesBlocked_Call struct {
+	*mock.Call
+}
+
+// GetProfileServicesBlocked is a helper method to define mock.On call
+//   - ctx context.Context
+//   - profileId string
+func (_e *Cache_Expecter) GetProfileServicesBlocked(ctx interface{}, profileId interface{}) *Cache_GetProfileServicesBlocked_Call {
+	return &Cache_GetProfileServicesBlocked_Call{Call: _e.mock.On("GetProfileServicesBlocked", ctx, profileId)}
+}
+
+func (_c *Cache_GetProfileServicesBlocked_Call) Run(run func(ctx context.Context, profileId string)) *Cache_GetProfileServicesBlocked_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *Cache_GetProfileServicesBlocked_Call) Return(strings []string, err error) *Cache_GetProfileServicesBlocked_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *Cache_GetProfileServicesBlocked_Call) RunAndReturn(run func(ctx context.Context, profileId string) ([]string, error)) *Cache_GetProfileServicesBlocked_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetProfileSettingsBatch provides a mock function for the type Cache
 func (_mock *Cache) GetProfileSettingsBatch(ctx context.Context, profileId string) (*model.ProfileSettings, error) {
 	ret := _mock.Called(ctx, profileId)

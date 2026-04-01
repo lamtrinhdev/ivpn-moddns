@@ -2,6 +2,7 @@ package requestcontext
 
 import (
 	"context"
+	"time"
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/ivpn/dns/libs/logging"
@@ -17,10 +18,12 @@ type RequestContext struct {
 	LogsSettings            map[string]string       `json:"logs_settings"`
 	AdvancedSettings        map[string]string       `json:"advanced_settings"`
 	DNSSECSettings          map[string]string       `json:"dnssec_settings"`
-	PartialFilteringResults []model.FilterResult    `json:"partial_filtering_results"`
+	PartialFilteringResults []model.StageResult     `json:"partial_filtering_results"`
 	FilterResult            model.FilterResult      `json:"filter_result"`
 	Logger                  logging.LoggerInterface `json:"-"`
 	LoggerConfig            logging.LoggingConfig   `json:"logger_config"`
+	StartTime               time.Time               `json:"-"`
+	UpstreamName            string                  `json:"-"`
 }
 
 func NewRequestContext(ctx context.Context, p *proxy.Proxy, profileId string, deviceId string, privacySettings, logsSettings, dnssecSettings, advancedSettings map[string]string, logger logging.LoggerInterface) *RequestContext {

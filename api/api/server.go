@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,24 +21,26 @@ import (
 	"github.com/ivpn/dns/api/internal/middleware"
 	"github.com/ivpn/dns/api/internal/validator"
 	"github.com/ivpn/dns/api/service"
+	"github.com/ivpn/dns/libs/servicescatalogcache"
 	"github.com/ivpn/dns/libs/urlshort"
 )
 
 // APIServer represents an API server
 type APIServer struct {
-	App       *fiber.App
-	Service   service.Service // TODO: Should be service.Servicer interface
-	Config    *config.Config
-	Validator *validator.APIValidator
-	Db        db.Db
-	Cache     cache.Cache
-	IdGen     idgen.Generator
-	Mailer    email.Mailer
-	Shortener *urlshort.URLShortener
+	App             *fiber.App
+	Service         service.Service // TODO: Should be service.Servicer interface
+	Config          *config.Config
+	Validator       *validator.APIValidator
+	Db              db.Db
+	Cache           cache.Cache
+	IdGen           idgen.Generator
+	Mailer          email.Mailer
+	Shortener       *urlshort.URLShortener
+	ServicesCatalog *servicescatalogcache.Loader
 }
 
 // NewServer inititiates database connection and sets up API endpoints
-func NewServer(config *config.Config, service service.Service, db db.Db, cache cache.Cache, idGen idgen.Generator, apiValidator *validator.APIValidator, email email.Mailer, shortener *urlshort.URLShortener) (*APIServer, error) {
+func NewServer(config *config.Config, service service.Service, db db.Db, cache cache.Cache, idGen idgen.Generator, apiValidator *validator.APIValidator, email email.Mailer, shortener *urlshort.URLShortener, servicesCatalog *servicescatalogcache.Loader) (*APIServer, error) {
 	app := fiber.New(fiber.Config{
 		ServerHeader: "modDNS API",
 		AppName:      "modDNS API",
@@ -45,15 +48,16 @@ func NewServer(config *config.Config, service service.Service, db db.Db, cache c
 	})
 
 	server := &APIServer{
-		App:       app,
-		Service:   service,
-		Config:    config,
-		Validator: apiValidator,
-		Db:        db,
-		Cache:     cache,
-		IdGen:     idGen,
-		Mailer:    email,
-		Shortener: shortener,
+		App:             app,
+		Service:         service,
+		Config:          config,
+		Validator:       apiValidator,
+		Db:              db,
+		Cache:           cache,
+		IdGen:           idGen,
+		Mailer:          email,
+		Shortener:       shortener,
+		ServicesCatalog: servicesCatalog,
 	}
 
 	middleware.InitLimitConfig(config.API)
@@ -66,7 +70,12 @@ func (s *APIServer) setupMiddlewares() {
 	s.App.Use(middleware.SentryFiber())
 	s.App.Use(middleware.Recover())
 	s.App.Use(requestid.New())
-	s.App.Use(logger.New())
+	s.App.Use(logger.New(logger.Config{
+		Next: func(c *fiber.Ctx) bool {
+			return c.Response().StatusCode() == fiber.StatusOK &&
+				strings.HasPrefix(c.Path(), "/health/")
+		},
+	}))
 	s.App.Use(helmet.New(helmet.Config{
 		HSTSMaxAge:            31536000,
 		HSTSPreloadEnabled:    true,
@@ -111,6 +120,7 @@ func (s *APIServer) RegisterRoutes() {
 	mobileconfig := v1.Group("/mobileconfig")
 	sessions := v1.Group("/sessions")
 	blocklists := v1.Group("/blocklists")
+	services := v1.Group("/services")
 	webauthn := v1.Group("/webauthn")
 	sub := v1.Group("/sub")
 
@@ -141,6 +151,7 @@ func (s *APIServer) RegisterRoutes() {
 	verify.Post("/email/otp/confirm", middleware.NewLimit(10, 1*time.Minute), s.verifyEmailOTP())
 
 	blocklists.Get("", middleware.NewLimit(20, 1*time.Minute), s.getBlocklists())
+	services.Get("", middleware.NewLimit(20, 1*time.Minute), s.getServicesCatalog())
 
 	// Protected WebAuthn endpoints (require authentication)
 	webauthn.Post("/passkey/add/begin", middleware.NewLimit(10, 1*time.Minute), s.beginAddPasskey())
@@ -190,6 +201,10 @@ func (s *APIServer) RegisterRoutes() {
 	// Blocklists endpoints
 	profiles.Post("/:id/blocklists", middleware.NewLimit(20, 1*time.Minute), s.enableBlocklists())
 	profiles.Delete("/:id/blocklists", middleware.NewLimit(20, 1*time.Minute), s.disableBlocklists())
+
+	// Services endpoints
+	profiles.Post("/:id/services", middleware.NewLimit(20, 1*time.Minute), s.enableServices())
+	profiles.Delete("/:id/services", middleware.NewLimit(20, 1*time.Minute), s.disableServices())
 
 	// Session endpoints (respect global disable flag via conditional wrapper)
 	if s.Config.API.DisableRateLimit {

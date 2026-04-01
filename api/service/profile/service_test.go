@@ -2133,19 +2133,18 @@ func (suite *ProfileTestSuite) TestCreateCustomRulesBulkAutoPrepend() {
 			input:          "::1",
 			wantValue:      "::1",
 		},
-		// ASN syntax is not supported on this branch yet
-		// {
-		// 	name:           "include mode: ASN with prefix not prefixed",
-		// 	subdomainsRule: "include",
-		// 	input:          "AS15169",
-		// 	wantValue:      "15169",
-		// },
-		// {
-		// 	name:           "include mode: ASN without prefix not prefixed",
-		// 	subdomainsRule: "include",
-		// 	input:          "15169",
-		// 	wantValue:      "15169",
-		// },
+		{
+			name:           "include mode: ASN with prefix not prefixed",
+			subdomainsRule: "include",
+			input:          "AS15169",
+			wantValue:      "15169",
+		},
+		{
+			name:           "include mode: ASN without prefix not prefixed",
+			subdomainsRule: "include",
+			input:          "15169",
+			wantValue:      "15169",
+		},
 		{
 			name:           "include mode: CIDR not prefixed (skipped as invalid syntax)",
 			subdomainsRule: "include",

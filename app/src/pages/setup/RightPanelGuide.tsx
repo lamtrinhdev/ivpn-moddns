@@ -52,19 +52,19 @@ interface SetupGuidePanelProps {
 }
 
 const platformIcons: { [key: string]: React.ReactNode } = {
-    "Windows": <img src={WindowsIcon} alt="Windows" className="w-5 h-5 brightness-0 invert" />,
-    "macOS": <img src={AppleLogo} alt="macOS" className="w-5 h-5 brightness-0 invert" />,
-    "Linux": <img src={LinuxLogo} alt="Linux" className="w-5 h-5 brightness-0 invert" />,
+    "Windows": <img src={WindowsIcon} alt="Windows" className="w-5 h-5 brightness-0 dark:invert" />,
+    "macOS": <img src={AppleLogo} alt="macOS" className="w-5 h-5 brightness-0 dark:invert" />,
+    "Linux": <img src={LinuxLogo} alt="Linux" className="w-5 h-5 brightness-0 dark:invert" />,
     "Browsers": <AppWindow className="w-5 h-5" />,
     "Android": <Smartphone className="w-5 h-5" />,
-    "iOS": <img src={AppleLogo} alt="iOS" className="w-5 h-5 brightness-0 invert" />,
+    "iOS": <img src={AppleLogo} alt="iOS" className="w-5 h-5 brightness-0 dark:invert" />,
     "Routers": <Router className="w-5 h-5" />,
     "Console": <Gamepad2 className="w-5 h-5" />,
     "Smart TV": <Tv2 className="w-5 h-5" />,
     "Device Identification": <Smartphone className="w-5 h-5" />,
 };
 
-const platformGuides: { [key: string]: any } = {
+const platformGuides: { [key: string]: { badges?: { label: string }[]; steps?: { instruction: React.ReactNode; step?: number }[] } | null } = {
     "Windows": WindowsGuide,
     "Linux": LinuxGuide,
     "Android": AndroidGuide,
@@ -150,15 +150,13 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
     // Dynamic positioning: respect the measured header stack height so our overlay starts BELOW the fixed header(s)
     // Header stack height is published to --app-header-stack by useHeaderStackHeight hook (App.tsx)
     // Fallbacks: mobile ~110px padding (App.tsx fallback) but actual visual header for /setup page is usually ~64-72px.
-    const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
     const baseTop = connectionStatusVisible ? 48 : 0;
 
-    // Measure actual header + optional page title height + safe-area inset (iOS notch) for precise overlay offset.
+    // Measure header height for overlay positioning on all non-desktop devices (phones + tablets)
     const [mobileTop, setMobileTop] = useState(0);
     useLayoutEffect(() => {
         if (!(mode === 'overlay')) return;
         const measure = () => {
-            if (!isMobile) { setMobileTop(baseTop); return; }
             const header = document.querySelector('[data-testid=app-header-bar]') as HTMLElement | null;
             const title = document.querySelector('[data-testid=mobile-header-page-title]') as HTMLElement | null;
             let total = 0;
@@ -167,7 +165,7 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
             // Add safe-area inset top if present
             const safe = parseInt(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)').replace('px', '')) || 0;
             // Fallback if measurement fails
-            if (total === 0) total = 64;
+            if (total === 0) total = baseTop + 64;
             setMobileTop(total + safe);
         };
         measure();
@@ -189,12 +187,12 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
             mo.disconnect();
             clearInterval(id);
         };
-    }, [mode, isMobile, baseTop]);
+    }, [mode, baseTop]);
 
     const EXTRA_BUFFER = 24;
-    const bufferedTop = mode === 'overlay' ? mobileTop + EXTRA_BUFFER : baseTop;
-    const topOffsetValue = `${bufferedTop}px`;
-    const height = mode === 'overlay' ? `calc(100dvh - ${bufferedTop}px)` : `calc(100dvh - ${baseTop}px)`;
+    const bufferedTop = mode === 'overlay' ? mobileTop + EXTRA_BUFFER : 0;
+    const topOffsetValue = mode === 'overlay' ? `${bufferedTop}px` : '0';
+    const height = mode === 'overlay' ? `calc(100dvh - ${bufferedTop}px)` : '100dvh';
 
     const isOverlay = mode === 'overlay';
 
@@ -202,7 +200,7 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
         <div
             data-testid="setup-guide-panel"
             data-mode={isOverlay ? 'overlay' : 'sidepanel'}
-            className={`fixed ${isOverlay ? 'inset-x-0' : 'right-0'} ${isOverlay ? 'w-full' : 'w-[600px]'} ${isOverlay ? 'rounded-none' : 'rounded-md'} bg-[#141414] transition-all duration-500 ease-in-out z-40 ${isVisible
+            className={`fixed ${isOverlay ? 'inset-x-0' : 'right-0'} ${isOverlay ? 'w-full' : 'w-[600px]'} ${isOverlay ? 'rounded-none' : 'rounded-md'} bg-transparent dark:bg-[var(--variable-collection-surface)] border border-[var(--tailwind-colors-slate-light-300)] dark:border-transparent transition-all duration-500 ease-in-out z-40 ${isVisible
                 ? 'transform translate-x-0 opacity-100'
                 : 'transform translate-x-full opacity-0'
                 }`}
@@ -215,21 +213,21 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
         >
             <div className="h-full relative flex flex-col">
                 {/* Instructions Header */}
-                <div className="flex items-center justify-between px-4 sm:px-6 h-[54px] sm:h-[62px] bg-[#141414] border-b border-[var(--tailwind-colors-slate-700)]" data-testid="setup-guide-header">
+                <div className="flex items-center justify-between px-4 sm:px-6 h-[54px] sm:h-[62px] bg-transparent dark:bg-[var(--variable-collection-surface)] border-b border-[var(--shadcn-ui-app-border)]" data-testid="setup-guide-header">
                     <div className="flex items-center gap-3 min-w-0">
                         {isOverlay && (
                             <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6 shrink-0" data-testid="setup-guide-close-button">
-                                <XIcon className="w-6 h-6 text-[var(--tailwind-colors-slate-50)]" />
+                                <XIcon className="w-6 h-6 text-[var(--shadcn-ui-app-foreground)]" />
                             </Button>
                         )}
-                        {icon}
-                        <div data-testid="setup-guide-title" className="text-sm sm:text-lg text-[var(--tailwind-colors-slate-50)] leading-6 font-['Roboto_Flex-Regular',Helvetica] truncate">
+                        <div className="text-[var(--shadcn-ui-app-foreground)]">{icon}</div>
+                        <div data-testid="setup-guide-title" className="text-sm sm:text-lg text-[var(--shadcn-ui-app-foreground)] leading-6 font-['Roboto_Flex-Regular',Helvetica] truncate">
                             {platform} setup
                         </div>
                     </div>
                     {!isOverlay && (
                         <Button variant="ghost" size="icon" onClick={onClose} className="h-6 w-6" data-testid="setup-guide-close-button">
-                            <XIcon className="w-6 h-6 text-[var(--tailwind-colors-slate-50)]" />
+                            <XIcon className="w-6 h-6 text-[var(--shadcn-ui-app-foreground)]" />
                         </Button>
                     )}
                 </div>
@@ -238,13 +236,10 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
                     <div className="flex flex-col gap-6">
                         {/* Tags */}
                         <div className="flex items-start gap-2.5 flex-wrap">
-                            {guide.badges?.map((badge: any, index: number) => (
+                            {guide.badges?.map((badge: { label: string }, index: number) => (
                                 <Badge
                                     key={index}
-                                    className={`cursor-default select-none tracking-[0.08em] uppercase text-[10px] font-semibold px-3 py-1 rounded-[2px] border ${index === 0
-                                        ? 'bg-[var(--tailwind-colors-slate-950)]/80 text-[var(--tailwind-colors-slate-50)] border-[var(--tailwind-colors-slate-600)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-                                        : 'bg-transparent text-[var(--tailwind-colors-slate-300)] border-[var(--tailwind-colors-slate-600)]'
-                                        }`}
+                                    className="cursor-default select-none tracking-[0.08em] uppercase text-[10px] font-semibold px-3 py-1 rounded-[2px] border bg-[var(--variable-collection-surface)] text-[var(--shadcn-ui-app-foreground)] border-[var(--tailwind-colors-slate-400)] dark:border-[var(--tailwind-colors-slate-600)]"
                                 >
                                     {badge.label}
                                 </Badge>
@@ -253,8 +248,8 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
 
                         {/* Quick Setup Button for Apple devices */}
                         {supportsMobileconfig && (
-                            <div className="flex flex-col gap-3 p-4 bg-[var(--tailwind-colors-rdns-900)] rounded-lg border border-[var(--tailwind-colors-rdns-700)]">
-                                <p className="text-sm text-[var(--tailwind-colors-slate-300)]">
+                            <div className="flex flex-col gap-3 p-4 bg-[var(--tailwind-colors-rdns-600)]/10 rounded-lg border border-[var(--tailwind-colors-rdns-600)]/30">
+                                <p className="text-sm text-[var(--shadcn-ui-app-muted-foreground)]">
                                     Create a configuration profile to automatically apply our DNS settings. You will be prompted to download and install the file on your {platform} device.
                                 </p>
                                 <Button
@@ -270,16 +265,16 @@ export default function SetupGuidePanel({ platform, onClose, isVisible = true, m
 
                         {/* Steps */}
                         <div className="flex flex-col gap-6">
-                            {guide.steps?.map((step: any, index: number) => (
+                            {guide.steps?.map((step: { instruction: React.ReactNode; step?: number }, index: number) => (
                                 <div key={index} className="flex flex-col gap-3">
                                     {step.step && (
                                         <div className="flex items-center gap-2.5">
-                                            <div className="text-sm text-[var(--tailwind-colors-slate-200)] leading-5 font-['Roboto_Flex-Regular',Helvetica]">
+                                            <div className="text-sm text-[var(--shadcn-ui-app-muted-foreground)] leading-5 font-['Roboto_Flex-Regular',Helvetica]">
                                                 STEP {step.step}
                                             </div>
                                         </div>
                                     )}
-                                    <div className="text-sm text-[var(--tailwind-colors-slate-50)] leading-6 font-['Roboto_Flex-Regular',Helvetica]">
+                                    <div className="text-sm text-[var(--shadcn-ui-app-foreground)] leading-6 font-['Roboto_Flex-Regular',Helvetica]">
                                         {step.instruction}
                                     </div>
                                 </div>

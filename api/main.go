@@ -14,6 +14,7 @@ import (
 	"github.com/ivpn/dns/api/internal/middleware"
 	"github.com/ivpn/dns/api/internal/validator"
 	"github.com/ivpn/dns/api/service"
+	"github.com/ivpn/dns/libs/servicescatalogcache"
 	"github.com/ivpn/dns/libs/store"
 
 	"github.com/getsentry/sentry-go"
@@ -125,10 +126,19 @@ func main() {
 		log.Panic().Err(err).Msg("Failed to create API validator")
 	}
 
-	webAuthn := middleware.NewWebAuthn(*appConfig)
+	webAuthn, err := middleware.NewWebAuthn(*appConfig)
+	if err != nil {
+		log.Panic().Err(err).Msg("Failed to initialize WebAuthn")
+	}
+	servicesCatalog, err := servicescatalogcache.New(appConfig.Service.ServicesCatalogPath, appConfig.Service.ServicesCatalogReloadEvery)
+	if err != nil {
+		log.Panic().Err(err).Msg("Failed to initialize services catalog")
+	}
+	go servicesCatalog.Start(context.Background())
+
 	service := service.New(*appConfig, db, cache, idGen, apiValidator, mailer, shortener, webAuthn)
 
-	server, err := api.NewServer(appConfig, service, db, cache, idGen, apiValidator, mailer, shortener)
+	server, err := api.NewServer(appConfig, service, db, cache, idGen, apiValidator, mailer, shortener, servicesCatalog)
 	if err != nil {
 		log.Panic().Err(err).Msg("Failed to create API server")
 	}

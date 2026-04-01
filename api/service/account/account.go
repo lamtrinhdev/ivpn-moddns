@@ -281,16 +281,22 @@ func (a *AccountService) RegisterAccountWithActiveUntil(ctx context.Context, ema
 	return acc, nil
 }
 
-// SendResetPasswordEmail generates secure token and sends reset password email
+// SendResetPasswordEmail generates secure token and sends reset password email.
+// Returns nil even when the account is not found to prevent account enumeration.
 func (a *AccountService) SendResetPasswordEmail(ctx context.Context, email string) error {
 	acc, err := a.AccountRepository.GetAccountByEmail(ctx, email)
 	if err != nil {
-		log.Warn().Str("email", email).Msg("Password reset requested for unknown account")
+		if errors.Is(err, dbErrors.ErrAccountNotFound) {
+			// Do not reveal whether the account exists.
+			log.Debug().Str("email", email).Msg("Password reset requested for non-existent account")
+			return nil
+		}
+		log.Error().Err(err).Str("email", email).Msg("Error retrieving account for password reset")
 		return nil
 	}
 
 	if !acc.EmailVerified {
-		log.Warn().Str("email", email).Msg("Password reset requested for unverified account")
+		log.Info().Str("email", email).Msg("Password reset requested for unverified email")
 		return nil
 	}
 

@@ -9,11 +9,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* TODO: uncomment after light mode is implemented*/
-  /* color-scheme: light dark; */
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: rgba(17, 17, 17, 1);
+  color-scheme: light dark;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -64,10 +60,9 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  overscroll-behavior: contain;
 }
 
 h1 {
@@ -86,27 +81,16 @@ h1 {
   cursor: pointer;
   transition: border-color 0.25s;
 } */
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
 
-/* TODO: uncomment after light mode is implemented*/
-/* @media (prefers-color-scheme: light) {
-  :root {
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
     color: #213547;
-    background-color: #ffffff;
+    /* background-color handled by --shadcn-ui-app-background CSS variable */
   }
-  a:hover {
+  :root:not(.dark) a:hover {
     color: #747bff;
   }
-  button {
-    background-color: #f9f9f9;
-  }
-} */
+}
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -146,7 +130,7 @@ button:focus-visible {
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-.dark {
+:root.dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

@@ -59,7 +59,11 @@ class TestModelProfile(unittest.TestCase):
                             ], 
                         blocklists_subdomains_rule = 'block', 
                         custom_rules_subdomains_rule = 'include', 
-                        default_rule = 'block', ), 
+                        default_rule = 'block', 
+                        services = moddns.models.model/services_settings.model.ServicesSettings(
+                            blocked = [
+                                ''
+                                ], ), ), 
                     profile_id = '', 
                     security = moddns.models.model/security.model.Security(
                         dnssec = moddns.models.model/dnssec_settings.model.DNSSECSettings(
@@ -94,7 +98,11 @@ class TestModelProfile(unittest.TestCase):
                             ], 
                         blocklists_subdomains_rule = 'block', 
                         custom_rules_subdomains_rule = 'include', 
-                        default_rule = 'block', ), 
+                        default_rule = 'block', 
+                        services = moddns.models.model/services_settings.model.ServicesSettings(
+                            blocked = [
+                                ''
+                                ], ), ), 
                     profile_id = '', 
                     security = moddns.models.model/security.model.Security(
                         dnssec = moddns.models.model/dnssec_settings.model.DNSSECSettings(

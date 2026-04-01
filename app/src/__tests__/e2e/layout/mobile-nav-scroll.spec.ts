@@ -10,6 +10,7 @@ function isMobileLike(name?: string) {
 }
 
 test.describe('@layout mobile nav scrollability', () => {
+  // eslint-disable-next-line no-empty-pattern
   test.beforeEach(async ({}, testInfo) => {
     if (!isMobileLike(testInfo.project.name)) test.skip();
   });
@@ -21,9 +22,9 @@ test.describe('@layout mobile nav scrollability', () => {
     // Force landscape by resizing viewport (Pixel 5 baseline width/height swapped)
     await page.setViewportSize({ width: 900, height: 430 });
 
-    // Open menu
-    const openBtn = page.getByRole('button', { name: /open navigation menu/i });
-    await openBtn.click();
+    // Open menu via bottom nav "More" button
+    const moreBtn = page.getByTestId('bottom-nav').getByRole('button', { name: /more/i });
+    await moreBtn.click();
 
   const nav = page.getByTestId('overlay-navigation');
     await expect(nav).toBeVisible();

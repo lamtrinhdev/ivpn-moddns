@@ -48,6 +48,17 @@ func (c *RedisCache) GetProfileBlocklists(ctx context.Context, profileId string)
 	return cmd.Val(), nil
 }
 
+// GetProfileServicesBlocked gets blocked services (service IDs) for a profile.
+func (c *RedisCache) GetProfileServicesBlocked(ctx context.Context, profileId string) ([]string, error) {
+	settingsKey := "settings:" + profileId
+	settingsServicesBlocked := fmt.Sprintf("%s:%s", settingsKey, "services")
+	cmd := c.client().LRange(ctx, settingsServicesBlocked, 0, -1)
+	if err := cmd.Err(); err != nil {
+		return nil, err
+	}
+	return cmd.Val(), nil
+}
+
 // GetProfileLogsSettings gets blocklists profile subscribes from the cache
 func (c *RedisCache) GetProfileLogsSettings(ctx context.Context, profileId string) (map[string]string, error) {
 	return c.getProfileSettings(ctx, profileId, "logs")
@@ -165,38 +176,42 @@ func (c *RedisCache) GetProfileSettingsBatch(ctx context.Context, profileId stri
 	result := &model.ProfileSettings{}
 
 	// Privacy
-	if privacyCmd.Err() != nil {
+	switch {
+	case privacyCmd.Err() != nil:
 		result.PrivacyErr = privacyCmd.Err()
-	} else if len(privacyCmd.Val()) == 0 {
+	case len(privacyCmd.Val()) == 0:
 		result.PrivacyErr = fmt.Errorf("No [privacy] settings found for profile %s", profileId)
-	} else {
+	default:
 		result.Privacy = privacyCmd.Val()
 	}
 
 	// Logs
-	if logsCmd.Err() != nil {
+	switch {
+	case logsCmd.Err() != nil:
 		result.LogsErr = logsCmd.Err()
-	} else if len(logsCmd.Val()) == 0 {
+	case len(logsCmd.Val()) == 0:
 		result.LogsErr = fmt.Errorf("No [logs] settings found for profile %s", profileId)
-	} else {
+	default:
 		result.Logs = logsCmd.Val()
 	}
 
 	// DNSSEC
-	if dnssecCmd.Err() != nil {
+	switch {
+	case dnssecCmd.Err() != nil:
 		result.DNSSECErr = dnssecCmd.Err()
-	} else if len(dnssecCmd.Val()) == 0 {
+	case len(dnssecCmd.Val()) == 0:
 		result.DNSSECErr = fmt.Errorf("No [security dnssec] settings found for profile %s", profileId)
-	} else {
+	default:
 		result.DNSSEC = dnssecCmd.Val()
 	}
 
 	// Advanced
-	if advancedCmd.Err() != nil {
+	switch {
+	case advancedCmd.Err() != nil:
 		result.AdvancedErr = advancedCmd.Err()
-	} else if len(advancedCmd.Val()) == 0 {
+	case len(advancedCmd.Val()) == 0:
 		result.AdvancedErr = fmt.Errorf("No [advanced] settings found for profile %s", profileId)
-	} else {
+	default:
 		result.Advanced = advancedCmd.Val()
 	}
 

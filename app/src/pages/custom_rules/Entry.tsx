@@ -35,7 +35,7 @@ const CustomRuleEntry: React.FC<CustomRuleEntryProps> = ({
 
     return (
         <Card
-            className={`w-full h-10 bg-[var(--variable-collection-surface)] border-none transition-opacity duration-300 ${isVisible && !isRemoving ? "opacity-100" : "opacity-0"}`}
+            className={`w-full h-10 bg-transparent dark:bg-[var(--variable-collection-surface)] border border-[var(--tailwind-colors-slate-light-300)] dark:border-transparent transition-opacity duration-300 ${isVisible && !isRemoving ? "opacity-100" : "opacity-0"}`}
         >
             <CardContent className="flex items-center justify-between relative self-stretch w-full h-full p-0 px-3">
                 <div className="flex items-center gap-4 relative flex-1">
@@ -45,7 +45,7 @@ const CustomRuleEntry: React.FC<CustomRuleEntryProps> = ({
                         className="w-4 h-4 border-solid border-[var(--tailwind-colors-rdns-600)]"
                     />
                     <div className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
-                        <div className="relative w-fit font-text-sm-leading-5-normal font-normal text-white text-sm tracking-normal leading-5 whitespace-nowrap">
+                        <div className="relative w-fit font-text-sm-leading-5-normal font-normal text-foreground text-sm tracking-normal leading-5 whitespace-nowrap">
                             {domain}
                         </div>
                     </div>

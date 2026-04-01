@@ -11,13 +11,14 @@ import api from "@/api/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { DialogActions } from "@/components/dialogs/DialogLayout";
+import type { ModelProfile } from "@/api/client/api";
 
 interface DeleteProfileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    activeProfile: any;
-    setActiveProfile: (profile: any) => void;
-    profiles: any[];
+    activeProfile: { profile_id: string };
+    setActiveProfile: (profile: ModelProfile | null) => void;
+    profiles: ModelProfile[];
     onProfileDeleted: (profileId: string) => void;
 }
 
@@ -45,8 +46,9 @@ export default function DeleteProfileDialog({
                 toast.success("Profile deleted.");
                 navigate("/setup", { state: { profileDeleted: true } });
             }
-        } catch (e: any) {
-            toast.error(e?.response?.data?.error || "Failed to delete profile.");
+        } catch (e: unknown) {
+            const axiosErr = e as { response?: { data?: { error?: string } } };
+            toast.error(axiosErr?.response?.data?.error || "Failed to delete profile.");
         } finally {
             setLoading(false);
         }
@@ -93,7 +95,7 @@ export default function DeleteProfileDialog({
                     <Button
                         variant="default"
                         size="lg"
-                        className="flex-1 min-w-32 bg-[var(--tailwind-colors-red-600)] text-[var(--tailwind-colors-slate-50)] hover:!bg-[var(--tailwind-colors-red-700)]"
+                        className="flex-1 min-w-32 bg-[var(--tailwind-colors-red-600)] text-white hover:bg-[var(--tailwind-colors-red-400)]"
                         onClick={handleDeleteProfile}
                         disabled={loading}
                     >

@@ -1430,6 +1430,126 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/profiles/{id}/services": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Enable services for a profile (adds to privacy.services)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Enable services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Profile ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Services to enable",
+                        "name": "service_ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ServicesUpdates"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Disable services for a profile (removes from privacy.services)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile"
+                ],
+                "summary": "Disable services",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Profile ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Services to disable",
+                        "name": "service_ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ServicesUpdates"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/profiles/{id}/statistics": {
             "get": {
                 "security": [
@@ -1475,6 +1595,37 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/services": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get available ASN-based services presets",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Services"
+                ],
+                "summary": "Get services catalog",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/servicescatalog.Catalog"
                         }
                     },
                     "500": {
@@ -2167,6 +2318,8 @@ const docTemplate = `{
             "properties": {
                 "blocklist_ids": {
                     "type": "array",
+                    "maxItems": 100,
+                    "minItems": 1,
                     "items": {
                         "type": "string"
                     }
@@ -2184,6 +2337,22 @@ const docTemplate = `{
                 },
                 "error": {
                     "type": "string"
+                }
+            }
+        },
+        "api.ServicesUpdates": {
+            "type": "object",
+            "required": [
+                "service_ids"
+            ],
+            "properties": {
+                "service_ids": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -2215,9 +2384,14 @@ const docTemplate = `{
         },
         "api.createProfileBody": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1
                 }
             }
         },
@@ -2343,6 +2517,10 @@ const docTemplate = `{
                 "blocklist_id": {
                     "type": "string"
                 },
+                "category": {
+                    "description": "category key (only when kind=category)",
+                    "type": "string"
+                },
                 "default": {
                     "description": "default blocklist is enabled when profile is created",
                     "type": "boolean"
@@ -2358,6 +2536,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "intensity": {
+                    "description": "basic, comprehensive, restrictive",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "general, category, security",
                     "type": "string"
                 },
                 "last_modified": {
@@ -2377,6 +2563,7 @@ const docTemplate = `{
                     }
                 },
                 "type": {
+                    "description": "ownership: public (platform-provided) or private (user-uploaded)",
                     "type": "string"
                 }
             }
@@ -2507,6 +2694,12 @@ const docTemplate = `{
                         "block",
                         "allow"
                     ]
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -2527,7 +2720,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50
                 },
                 "profile_id": {
                     "type": "string"
@@ -3175,11 +3369,17 @@ const docTemplate = `{
         "requests.CreateProfileCustomRuleBody": {
             "type": "object",
             "required": [
+                "action",
                 "value"
             ],
             "properties": {
                 "action": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "block",
+                        "allow",
+                        "comment"
+                    ]
                 },
                 "value": {
                     "type": "string"
@@ -3189,11 +3389,17 @@ const docTemplate = `{
         "requests.CreateProfileCustomRulesBatchBody": {
             "type": "object",
             "required": [
+                "action",
                 "values"
             ],
             "properties": {
                 "action": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "block",
+                        "allow",
+                        "comment"
+                    ]
                 },
                 "values": {
                     "type": "array",
@@ -3390,6 +3596,37 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "reauth_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "servicescatalog.Catalog": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/servicescatalog.Service"
+                    }
+                }
+            }
+        },
+        "servicescatalog.Service": {
+            "type": "object",
+            "properties": {
+                "asns": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logo_key": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

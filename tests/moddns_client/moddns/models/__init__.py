@@ -18,6 +18,7 @@ from moddns.models.api_blocklists_updates import ApiBlocklistsUpdates
 from moddns.models.api_create_profile_body import ApiCreateProfileBody
 from moddns.models.api_err_response import ApiErrResponse
 from moddns.models.api_register_account_body import ApiRegisterAccountBody
+from moddns.models.api_services_updates import ApiServicesUpdates
 from moddns.models.api_verify_email_otp_body import ApiVerifyEmailOTPBody
 from moddns.models.api_web_authn_login_begin_request import ApiWebAuthnLoginBeginRequest
 from moddns.models.api_web_authn_register_begin_request import ApiWebAuthnRegisterBeginRequest
@@ -83,4 +84,6 @@ from moddns.models.responses_deletion_code_response import ResponsesDeletionCode
 from moddns.models.responses_registration_success_response import ResponsesRegistrationSuccessResponse
 from moddns.models.responses_short_link_response import ResponsesShortLinkResponse
 from moddns.models.responses_web_authn_reauth_finish_response import ResponsesWebAuthnReauthFinishResponse
+from moddns.models.servicescatalog_catalog import ServicescatalogCatalog
+from moddns.models.servicescatalog_service import ServicescatalogService
 from moddns.models.webauthncose_cose_algorithm_identifier import WebauthncoseCOSEAlgorithmIdentifier

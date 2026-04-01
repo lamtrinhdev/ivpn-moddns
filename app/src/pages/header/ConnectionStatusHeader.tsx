@@ -31,7 +31,7 @@ export default function ConnectionStatusHeader(): JSX.Element | null {
             <div data-testid="conn-header-label" className="font-bold text-[var(--tailwind-colors-slate-50)] text-xs leading-3 whitespace-nowrap font-['Roboto_Mono-Bold',Helvetica]">
                 Status
             </div>
-            <Badge data-testid="conn-header-badge" className={`${badge.className} text-[var(--tailwind-colors-slate-50)] px-2.5 py-0.5 rounded`}>
+            <Badge data-testid="conn-header-badge" className={`${badge.className} text-white px-2.5 py-0.5 rounded`}>
                 <span data-testid="conn-header-badge-text" className="font-text-xs-leading-4-semibold text-xs font-semibold whitespace-nowrap">{badge.text}</span>
             </Badge>
             <Separator data-testid="conn-header-separator" orientation="vertical" className="h-5" />

@@ -2,10 +2,11 @@ package filter
 
 import (
 	"context"
-	"slices"
+	"strings"
 	"sync"
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
+	"github.com/getsentry/sentry-go"
 	"github.com/ivpn/dns/proxy/cache"
 	"github.com/ivpn/dns/proxy/model"
 	"github.com/ivpn/dns/proxy/requestcontext"
@@ -14,21 +15,25 @@ import (
 )
 
 type DomainFilter struct {
-	Proxy          *proxy.Proxy
-	Cache          cache.Cache
-	patternCache   sync.Map
-	FilteringFuncs []func(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.FilterResult, error)
+	Proxy           *proxy.Proxy
+	Cache           cache.Cache
+	ServicesCatalog ServicesCatalogGetter
+	patternCache    sync.Map
+	FilteringFuncs  []func(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.StageResult, error)
 }
 
-// NewDNSFilterManager creates a new DNSFilterManager instance
-func NewDomainFilter(dnsProxy *proxy.Proxy, cache cache.Cache) *DomainFilter {
+// NewDomainFilter creates a new DomainFilter instance.
+// servicesCatalog may be nil if service domain blocking is not available.
+func NewDomainFilter(dnsProxy *proxy.Proxy, cache cache.Cache, servicesCatalog ServicesCatalogGetter) *DomainFilter {
 	fltrManager := &DomainFilter{
-		Cache: cache,
-		Proxy: dnsProxy,
+		Cache:           cache,
+		Proxy:           dnsProxy,
+		ServicesCatalog: servicesCatalog,
 	}
-	fltrManager.FilteringFuncs = []func(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.FilterResult, error){
+	fltrManager.FilteringFuncs = []func(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.StageResult, error){
 		fltrManager.filterBlocklists,
 		fltrManager.filterCustomRules,
+		fltrManager.filterServiceDomains,
 		fltrManager.applyDefaultRule,
 	}
 	return fltrManager
@@ -38,7 +43,7 @@ func NewDomainFilter(dnsProxy *proxy.Proxy, cache cache.Cache) *DomainFilter {
 func (f *DomainFilter) Execute(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (err error) {
 	ctx := context.Background()
 	eg, egCtx := errgroup.WithContext(ctx)
-	resultChan := make(chan *model.FilterResult, len(f.FilteringFuncs))
+	resultChan := make(chan *model.StageResult, len(f.FilteringFuncs))
 	for _, fltrFunc := range f.FilteringFuncs {
 		func(ctx context.Context, reqCtx *requestcontext.RequestContext) {
 			eg.Go(func() error {
@@ -68,23 +73,47 @@ func (f *DomainFilter) Execute(reqCtx *requestcontext.RequestContext, dctx *prox
 	return nil
 }
 
-func getFinalFilteringResult(fltrRes []model.FilterResult) model.FilterResult {
-	finalRes := model.FilterResult{
-		Status: model.StatusProcessed,
+// filterServiceDomains blocks queries for domains listed in the services
+// catalog. This runs in the domain phase (pre-resolve) to catch traffic
+// that ASN-based blocking misses when services use third-party CDNs.
+// Subdomain matching is always on: listing "microsoft.com" also blocks
+// "www.microsoft.com", "login.microsoft.com", etc.
+func (f *DomainFilter) filterServiceDomains(reqCtx *requestcontext.RequestContext, dctx *proxy.DNSContext) (*model.StageResult, error) {
+	defer sentry.Recover()
+
+	result := &model.StageResult{Decision: model.DecisionNone, Tier: TierServices}
+	if f.ServicesCatalog == nil {
+		return result, nil
 	}
 
-	for _, res := range fltrRes {
-		// if res == nil {
-		// 	continue
-		// }
-		if res.Status == model.StatusBlocked {
-			finalRes.Status = model.StatusBlocked
-			finalRes.Reasons = append(finalRes.Reasons, res.Reasons...)
-		} else if res.Status == model.StatusProcessed && slices.Contains(res.Reasons, REASON_CUSTOM_RULES) {
-			finalRes.Status = model.StatusProcessed
-			finalRes.Reasons = append(finalRes.Reasons, REASON_CUSTOM_RULES)
-			return finalRes
+	blockedServices, err := f.Cache.GetProfileServicesBlocked(context.Background(), reqCtx.ProfileId)
+	if err != nil || len(blockedServices) == 0 {
+		return result, nil
+	}
+
+	cat, err := f.ServicesCatalog.Get()
+	if err != nil || cat == nil {
+		return result, nil
+	}
+
+	domainMap := cat.DomainMapForServiceIDs(blockedServices)
+	if len(domainMap) == 0 {
+		return result, nil
+	}
+
+	fqdn, _ := strings.CutSuffix(dctx.Req.Question[0].Name, ".")
+	fqdn = strings.ToLower(fqdn)
+
+	// Check exact match, then parent domains (subdomain matching).
+	parts := strings.Split(fqdn, ".")
+	for i := range parts {
+		candidate := strings.Join(parts[i:], ".")
+		if svcID, ok := domainMap[candidate]; ok {
+			result.Decision = model.DecisionBlock
+			result.Reasons = append(result.Reasons, REASON_SERVICES, "service: "+svcID)
+			return result, nil
 		}
 	}
-	return finalRes
+
+	return result, nil
 }

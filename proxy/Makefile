@@ -1,6 +1,3 @@
-CWD=$$(pwd)
-PKG := "/app"
-PKG_LIST := $(shell go list ${PKG}/...)
 APP_NAME := "dnsproxy"
 
 .PHONY: all dep build test coverage coverhtml lint
