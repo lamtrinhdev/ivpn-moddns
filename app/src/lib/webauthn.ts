@@ -67,7 +67,6 @@ export async function registerPasskey(email: string, subid: string): Promise<voi
       throw new Error("Failed to complete passkey registration");
     }
   } catch (err: unknown) {
-    console.error('Passkey registration error:', err);
     const webauthnErr = err as WebAuthnError;
 
     // Handle 429 rate limiting errors
@@ -145,7 +144,6 @@ export async function authenticateWithPasskey(
 
     // Authentication successful - this is where the success toast should be shown
   } catch (err: unknown) {
-    console.error('Passkey authentication error:', err);
     const webauthnErr = err as WebAuthnError;
 
     // Handle 429 rate limiting and session limit errors
@@ -233,7 +231,6 @@ export async function addPasskeyToAccount(): Promise<void> {
       throw new Error("Failed to complete passkey addition");
     }
   } catch (err: unknown) {
-    console.error('Add passkey error:', err);
     const webauthnErr = err as WebAuthnError;
 
     // Handle 429 rate limiting errors
